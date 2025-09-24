@@ -38,7 +38,7 @@ jobs:
       - name: Build project
         run: |
           echo "Building project..."
-          npm run build
+          npm run build:ci
         env:
           NODE_ENV: production
           NEXT_TELEMETRY_DISABLED: 1
