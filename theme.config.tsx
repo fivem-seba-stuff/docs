@@ -6,8 +6,9 @@ import Search from '@components/Search';
 function useHead() {
   const { asPath } = useRouter();
   const { frontMatter, title } = useConfig();
-  const url = `https://coxdocs.dev${asPath}`;
-  const description = frontMatter.description || "Documentation for Community Ox's resources for FiveM/RedM";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fivem-seba-stuff.github.io/docs';
+  const url = `${baseUrl}${asPath}`;
+  const description = frontMatter.description || "Seba FiveM Docs Hub - Documentation for FiveM/RedM scripts and resources";
 
   return (
     <>
@@ -18,6 +19,7 @@ function useHead() {
       <meta name="og:title" content={title} />
       <meta name="og:description" content={description} />
       <meta name="og:url" content={url} />
+      <meta name="og:image" content={`${baseUrl}/static/og-image.png`} />
     </>
   );
 }
@@ -25,7 +27,7 @@ function useHead() {
 function useNextSeoProps() {
   const { asPath } = useRouter();
   const arr = asPath.replace(/[-_]/g, ' ').split('/');
-  const category = (arr[1][0] !== '#' && arr[1]) || 'Community Ox';
+  const category = (arr[1][0] !== '#' && arr[1]) || 'Seba FiveM Docs Hub';
   const rawTitle = arr[arr.length - 1];
   const title = /[a-z]/.test(rawTitle) && /[A-Z]/.test(rawTitle) ? rawTitle : '%s';
 
@@ -42,23 +44,21 @@ const config: DocsThemeConfig = {
       style={{
         paddingLeft: '50px',
         lineHeight: '38px',
-        background: "url('https://avatars.githubusercontent.com/u/209772401?s=38') no-repeat left",
-        backgroundSize: '38px',
         fontWeight: 550,
       }}
     >
-      Community Ox
+      Seba FiveM Docs Hub
     </div>
   ),
   project: {
-    link: 'https://github.com/communityox/docs',
+    link: 'https://github.com/fivem-seba-stuff/docs',
   },
   chat: {
-    link: 'https://discord.coxdocs.dev',
+    link: 'https://discord.gg/fivem-seba-stuff',
   },
-  docsRepositoryBase: 'https://github.com/communityox/docs/blob/main',
+  docsRepositoryBase: 'https://github.com/fivem-seba-stuff/docs/blob/main',
   footer: {
-    text: 'Community Ox',
+    text: 'Seba FiveM Docs Hub - FiveM Script Documentation',
   },
   search: {
     component: <Search />,

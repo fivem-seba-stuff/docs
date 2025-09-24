@@ -1,8 +1,10 @@
 {
   "index": "Introduction",
-  "guides": "Guides",
-  "oxmysql": "OxMySQL",
   "ox_lib": "Ox Lib",
+  "ox_doorlock": "Ox Doorlock",
+  "ox_target": "Ox Target",
+  "work_in_progress": "Work in Progress",
+  "end_support": "End Support",
   "fivemanage": {
     "title": "Fivemanage",
     "type": "page",
