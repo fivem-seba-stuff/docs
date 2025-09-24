@@ -6,14 +6,14 @@ import Search from '@components/Search';
 function useHead() {
   const { asPath } = useRouter();
   const { frontMatter, title } = useConfig();
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fivem-seba-stuff.github.io/docs';
+  const baseUrl = 'https://fivem-seba-stuff.github.io/docs';
   const url = `${baseUrl}${asPath}`;
   const description = frontMatter.description || "Seba FiveM Docs Hub - Documentation for FiveM/RedM scripts and resources";
 
   return (
     <>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <link rel="icon" type="image/x-icon" href="/static/cox.ico" />
+      <link rel="icon" type="image/x-icon" href="/docs/static/cox.ico" />
       <meta httpEquiv="Content-Language" content="en" />
       <meta name="description" content={description} />
       <meta name="og:title" content={title} />

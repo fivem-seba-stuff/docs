@@ -11,32 +11,18 @@ const nextConfig = {
   // Disable image optimization for static export
   images: {
     unoptimized: true,
-    formats: ['image/avif', 'image/webp'],
-    domains: [
-      'avatars.githubusercontent.com',
-      'raw.githubusercontent.com',
-      'coxdocs.dev',
-    ],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   
-  // Base path for GitHub Pages (will be set by environment variable)
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  // Base path for GitHub Pages
+  basePath: '/docs',
+  assetPrefix: '/docs/',
   
   // Enable experimental features for better Bun.js compatibility
   experimental: {
     serverComponentsExternalPackages: ['nextra'],
     optimizePackageImports: ['nextra-theme-docs'],
-    // Disable features that can cause warnings
     esmExternals: 'loose',
   },
-  
-  // Performance optimizations (disabled for Turbopack compatibility)
-  // compiler: {
-  //   removeConsole: process.env.NODE_ENV === 'production',
-  // },
   
   // Webpack optimizations for Bun.js compatibility
   webpack: (config, { isServer, dev }) => {
@@ -108,33 +94,6 @@ const nextConfig = {
     return [
       {
         source: '/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/(.*).png',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/(.*).jpg',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/(.*).gif',
         headers: [
           {
             key: 'Cache-Control',

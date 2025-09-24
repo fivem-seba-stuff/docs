@@ -1,0 +1,1025 @@
+# Seba VIP
+
+**Seba VIP** is a comprehensive VIP membership system for FiveM servers, providing exclusive benefits, tiered memberships, and subscription management for enhanced player experiences.
+
+## Description
+
+Seba VIP transforms your server's monetization strategy with a flexible VIP system that offers multiple membership tiers, exclusive perks, and automated subscription management. Perfect for server owners looking to provide premium experiences while generating sustainable revenue streams.
+
+## Features
+
+### Membership Tiers
+- Multiple customizable levels (Bronze, Silver, Gold, Diamond, and custom tiers)
+- Flexible benefit system with customizable perks for each tier
+- Progressive upgrade paths and tier transition systems
+- Time-based memberships with daily, weekly, monthly, and lifetime options
+
+### Exclusive Benefits
+- Premium spawn perks including exclusive vehicles, weapons, and items
+- Economy bonuses with increased payouts and special discounts
+- Priority features including queue priority and support escalation
+- Cosmetic rewards with unique skins, animations, and visual effects
+
+### Payment Integration
+- Multiple gateway support (PayPal, Stripe, and custom integrations)
+- Automated subscription management with recurring payment processing
+- Gift system allowing VIP purchases for other players
+- Comprehensive refund management with automated processing
+
+## Installation
+
+### Requirements
+- FiveM Server (latest version recommended)
+- Compatible framework (ESX, QBCore, or Standalone)
+- MySQL or MariaDB database
+- Web server for payment processing (optional)
+
+### Setup Process
+
+1. Download the latest version from the repository
+2. Extract files to your server's resources folder
+3. Import the `database.sql` file into your database
+4. Configure payment gateway settings in `config.lua`
+5. Set up payment integration credentials (if using)
+6. Add to server.cfg:
+   ```cfg
+   ensure seba_vip
+   ```
+7. Configure VIP tiers and benefits
+8. Restart your server
+
+## Configuration
+
+### Settings
+
+#### Basic Configuration
+```lua
+Config = {
+    -- Framework detection
+    Framework = 'auto', -- auto, esx, qbcore, standalone
+    
+    -- Database configuration
+    UseDatabase = true,
+    TablePrefix = 'seba_',
+    
+    -- VIP system settings
+    DefaultTier = 'none',
+    MaxTier = 'diamond',
+    
+    -- UI customization
+    UITheme = 'premium',
+    ShowVIPChat = true,
+    ShowVIPHUD = true,
+}
+```
+
+#### VIP Tiers Configuration
+```lua
+Config.VIPTiers = {
+    ['bronze'] = {
+        label = 'Bronze VIP',
+        color = '#CD7F32',
+        price = 9.99,
+        benefits = {
+            'spawn_protection',
+            'exclusive_chat',
+            'priority_support',
+        },
+        vehicles = {'adder', 'zentorno'},
+        weapons = {'WEAPON_PISTOL'},
+        money_multiplier = 1.2,
+        xp_multiplier = 1.1,
+    },
+    
+    ['silver'] = {
+        label = 'Silver VIP',
+        color = '#C0C0C0',
+        price = 19.99,
+        benefits = {
+            'spawn_protection',
+            'exclusive_chat',
+            'priority_support',
+            'teleport_command',
+            'god_mode',
+        },
+        vehicles = {'adder', 'zentorno', 'osiris', 'vacca'},
+        weapons = {'WEAPON_PISTOL', 'WEAPON_SMG'},
+        money_multiplier = 1.5,
+        xp_multiplier = 1.3,
+    },
+    
+    ['gold'] = {
+        label = 'Gold VIP',
+        color = '#FFD700',
+        price = 39.99,
+        benefits = {
+            'spawn_protection',
+            'exclusive_chat',
+            'priority_support',
+            'teleport_command',
+            'god_mode',
+            'vehicle_spawn',
+            'weapon_spawn',
+        },
+        vehicles = 'all_super',
+        weapons = 'all_legal',
+        money_multiplier = 2.0,
+        xp_multiplier = 1.5,
+    },
+}
+```
+
+#### Payment Gateway Configuration
+```lua
+Config.PayPal = {
+    enabled = true,
+    clientId = 'your_paypal_client_id',
+    clientSecret = 'your_paypal_client_secret',
+    sandbox = true, -- Use sandbox for testing
+    webhookId = 'your_webhook_id',
+}
+
+Config.Stripe = {
+    enabled = false,
+    publicKey = 'pk_test_...',
+    secretKey = 'sk_test_...',
+    webhookSecret = 'whsec_...',
+}
+```
+
+## Commands
+
+### Player Commands
+```
+/vip - Open VIP management menu
+/vipmenu - Open VIP benefits panel
+/vipstatus - Check current VIP status and benefits
+/viptp - Teleport to waypoint (VIP required)
+/vipveh [vehicle] - Spawn VIP-exclusive vehicle
+/vipweapon [weapon] - Obtain VIP weapon
+```
+
+### Administrative Commands
+```
+/givevip [id] [tier] [duration] - Grant VIP status to player
+/removevip [id] - Remove VIP status from player
+/checkvip [id] - Check player's VIP status and details
+/viplist - Display all current VIP members
+/viprefresh - Refresh VIP database and cache
+```
+
+## Server Functions
+
+### VIP Management
+
+#### GiveVIP
+```lua
+exports.seba_vip:GiveVIP(playerId, tier, duration)
+```
+Grant VIP status to a player.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `tier` (string): VIP tier to grant
+- `duration` (number): Duration in days
+
+**Example:**
+```lua
+exports.seba_vip:GiveVIP(1, 'gold', 30) -- Give 30-day Gold VIP
+```
+
+#### RemoveVIP
+```lua
+exports.seba_vip:RemoveVIP(playerId)
+```
+Remove VIP status from a player.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+
+#### HasVIP
+```lua
+local hasVIP = exports.seba_vip:HasVIP(playerId)
+```
+Check if a player has active VIP status.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+
+**Returns:**
+- `hasVIP` (boolean): VIP status
+
+#### GetVIPTier
+```lua
+local tier = exports.seba_vip:GetVIPTier(playerId)
+```
+Get player's current VIP tier.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+
+**Returns:**
+- `tier` (string): Current VIP tier or nil
+
+#### GetVIPExpiry
+```lua
+local expiry = exports.seba_vip:GetVIPExpiry(playerId)
+```
+Get VIP expiration timestamp.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+
+**Returns:**
+- `expiry` (number): Unix timestamp of expiration
+
+### Benefit System
+
+#### HasBenefit
+```lua
+local hasBenefit = exports.seba_vip:HasBenefit(playerId, 'spawn_protection')
+```
+Check if player has specific VIP benefit.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `benefit` (string): Benefit name to check
+
+**Returns:**
+- `hasBenefit` (boolean): Benefit availability
+
+#### ApplyMultiplier
+```lua
+local amount = exports.seba_vip:ApplyMultiplier(playerId, 'money', baseAmount)
+```
+Apply VIP multiplier to monetary values.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `type` (string): Multiplier type ('money', 'xp')
+- `baseAmount` (number): Base amount to multiply
+
+**Returns:**
+- `amount` (number): Amount after VIP multiplier applied
+
+#### GetPlayerBenefits
+```lua
+local benefits = exports.seba_vip:GetPlayerBenefits(playerId)
+```
+Get all benefits available to a player.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+
+**Returns:**
+- `benefits` (table): List of available benefits
+
+## Client Functions
+
+### UI Management
+
+#### OpenVIPMenu
+```lua
+exports.seba_vip:OpenVIPMenu()
+```
+Open the VIP management interface.
+
+#### CloseVIPMenu
+```lua
+exports.seba_vip:CloseVIPMenu()
+```
+Close the VIP management interface.
+
+#### ShowVIPNotification
+```lua
+exports.seba_vip:ShowVIPNotification(message, type)
+```
+Display VIP-themed notification.
+
+**Parameters:**
+- `message` (string): Notification message
+- `type` (string): Notification type ('success', 'info', 'warning', 'error')
+
+## Events
+
+### Server Events
+
+#### seba_vip:playerGotVIP
+Triggered when a player receives VIP status.
+
+```lua
+AddEventHandler('seba_vip:playerGotVIP', function(playerId, tier, duration)
+    print(GetPlayerName(playerId) .. ' received ' .. tier .. ' VIP for ' .. duration .. ' days')
+end)
+```
+
+#### seba_vip:playerLostVIP
+Triggered when a player loses VIP status.
+
+```lua
+AddEventHandler('seba_vip:playerLostVIP', function(playerId, tier)
+    print(GetPlayerName(playerId) .. ' lost ' .. tier .. ' VIP status')
+end)
+```
+
+#### seba_vip:benefitUsed
+Triggered when a VIP benefit is activated.
+
+```lua
+AddEventHandler('seba_vip:benefitUsed', function(playerId, benefit)
+    print(GetPlayerName(playerId) .. ' used benefit: ' .. benefit)
+end)
+```
+
+### Client Events
+
+#### seba_vip:statusUpdated
+Triggered when VIP status changes.
+
+```lua
+AddEventHandler('seba_vip:statusUpdated', function(vipData)
+    SendNUIMessage({
+        action = 'updateVIPStatus',
+        data = vipData
+    })
+end)
+```
+
+#### seba_vip:benefitReceived
+Triggered when a benefit is activated.
+
+```lua
+AddEventHandler('seba_vip:benefitReceived', function(benefit, data)
+    if benefit == 'spawn_protection' then
+        SetPlayerInvincible(PlayerId(), true)
+        SetTimeout(data.duration * 1000, function()
+            SetPlayerInvincible(PlayerId(), false)
+        end)
+    end
+end)
+```
+
+## Usage Examples
+
+### Custom Benefit Implementation
+
+```lua
+RegisterServerEvent('myserver:useCustomBenefit')
+AddEventHandler('myserver:useCustomBenefit', function()
+    local src = source
+    
+    if exports.seba_vip:HasBenefit(src, 'custom_teleport') then
+        TriggerClientEvent('myserver:allowTeleport', src)
+    else
+        TriggerClientEvent('chat:addMessage', src, {
+            color = {255, 0, 0},
+            args = {"System", "This feature requires VIP membership!"}
+        })
+    end
+end)
+```
+
+### Economy Integration with VIP Bonuses
+
+```lua
+RegisterServerEvent('jobs:payPlayer')
+AddEventHandler('jobs:payPlayer', function(amount)
+    local src = source
+    local finalAmount = exports.seba_vip:ApplyMultiplier(src, 'money', amount)
+    
+    AddMoney(src, finalAmount)
+    
+    if finalAmount > amount then
+        TriggerClientEvent('chat:addMessage', src, {
+            color = {0, 255, 0},
+            args = {"VIP Bonus", "You received a VIP bonus of $" .. (finalAmount - amount)}
+        })
+    end
+end)
+```
+
+### VIP Zone Access Control
+
+```lua
+CreateThread(function()
+    while true do
+        local playerPed = PlayerPedId()
+        local coords = GetEntityCoords(playerPed)
+        
+        if IsPlayerInVIPArea(coords) then
+            if not exports.seba_vip:HasVIP(GetPlayerServerId(PlayerId())) then
+                SetEntityCoords(playerPed, -1037.5, -2737.6, 20.2)
+                ShowNotification('This area is VIP only!')
+            end
+        end
+        
+        Wait(5000)
+    end
+end)
+```
+
+### Automated Expiry Management
+
+```lua
+CreateThread(function()
+    while true do
+        local vipPlayers = exports.seba_vip:GetAllVIPPlayers()
+        
+        for _, player in ipairs(vipPlayers) do
+            local expiry = exports.seba_vip:GetVIPExpiry(player.id)
+            
+            if expiry and expiry < os.time() then
+                exports.seba_vip:RemoveVIP(player.id)
+                
+                if GetPlayerPing(player.id) > 0 then
+                    TriggerClientEvent('seba_vip:membershipExpired', player.id)
+                end
+            end
+        end
+        
+        Wait(300000) -- Check every 5 minutes
+    end
+end)
+```
+
+## Database Schema
+
+### VIP Members Table
+```sql
+CREATE TABLE `seba_vip_members` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `identifier` varchar(50) NOT NULL,
+    `tier` varchar(20) NOT NULL,
+    `granted_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+    `expires_at` timestamp NOT NULL,
+    `granted_by` varchar(50),
+    `active` tinyint(1) DEFAULT 1,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`identifier`),
+    INDEX (`expires_at`, `active`)
+);
+```
+
+### VIP Transactions Table
+```sql
+CREATE TABLE `seba_vip_transactions` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `identifier` varchar(50) NOT NULL,
+    `tier` varchar(20) NOT NULL,
+    `amount` decimal(10,2) NOT NULL,
+    `currency` varchar(3) DEFAULT 'USD',
+    `transaction_id` varchar(100),
+    `status` enum('pending','completed','failed','refunded') DEFAULT 'pending',
+    `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX (`identifier`, `status`)
+);
+```
+
+### VIP Benefits Usage Table
+```sql
+CREATE TABLE `seba_vip_benefits_log` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `identifier` varchar(50) NOT NULL,
+    `benefit_type` varchar(50) NOT NULL,
+    `benefit_value` text,
+    `used_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX (`identifier`, `used_at`)
+);
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### VIP Status Not Activating
+- Verify database connection and ensure all tables exist
+- Check that player identifiers are correctly stored in database
+- Confirm tier names match exactly (case-sensitive)
+- Restart resource after database modifications
+
+#### Payment Processing Issues
+- Verify payment gateway configuration and credentials
+- Ensure webhook URLs are correctly configured and accessible
+- Confirm SSL certificates are valid for production environment
+- Test with sandbox/test modes before going live
+
+#### Benefits Not Functioning
+- Check benefit configuration in Config.Benefits
+- Verify event handlers are properly registered
+- Look for conflicts with other server resources
+- Enable debug mode for detailed benefit activation logs
+
+#### UI and Menu Problems
+- Clear browser cache and reload interface (Ctrl+F5)
+- Check browser console for JavaScript errors (F8)
+- Verify NUI callback functions are properly configured
+- Ensure HTML, CSS, and JS files are intact and unmodified
+
+---
+
+**Status:** Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**License:** MIT
+
+## Installation
+
+### Requirements
+- **FiveM Server**: Latest version
+- **Framework**: ESX, QBCore, or Standalone
+- **Database**: MySQL or MariaDB
+- **Web Server**: For payment processing (optional)
+
+### Setup Process
+
+1. **Download** the latest version
+2. **Extract** to your resources folder
+3. **Import** `database.sql` to your database
+4. **Configure** settings in `config.lua`
+5. **Set up payment** integration (if using)
+6. **Add** to server.cfg:
+   ```cfg
+   ensure seba_vip
+   ```
+
+## Configuration
+
+### Basic Configuration
+```lua
+Config = {
+    -- Framework
+    Framework = 'auto', -- auto, esx, qbcore, standalone
+    
+    -- Database settings
+    UseDatabase = true,
+    TablePrefix = 'seba_',
+    
+    -- VIP settings
+    DefaultTier = 'none',
+    MaxTier = 'diamond',
+    
+    -- UI settings
+    UITheme = 'premium',
+    ShowVIPChat = true,
+    ShowVIPHUD = true,
+}
+```
+
+### VIP Tiers Configuration
+```lua
+Config.VIPTiers = {
+    ['bronze'] = {
+        label = 'Bronze VIP',
+        color = '#CD7F32',
+        price = 9.99,
+        benefits = {
+            'spawn_protection',
+            'exclusive_chat',
+            'priority_support',
+        },
+        vehicles = {'adder', 'zentorno'},
+        weapons = {'WEAPON_PISTOL'},
+        money_multiplier = 1.2,
+        xp_multiplier = 1.1,
+    },
+    
+    ['silver'] = {
+        label = 'Silver VIP',
+        color = '#C0C0C0',
+        price = 19.99,
+        benefits = {
+            'spawn_protection',
+            'exclusive_chat',
+            'priority_support',
+            'teleport_command',
+            'god_mode',
+        },
+        vehicles = {'adder', 'zentorno', 'osiris', 'vacca'},
+        weapons = {'WEAPON_PISTOL', 'WEAPON_SMG'},
+        money_multiplier = 1.5,
+        xp_multiplier = 1.3,
+    },
+    
+    ['gold'] = {
+        label = 'Gold VIP',
+        color = '#FFD700',
+        price = 39.99,
+        benefits = {
+            'spawn_protection',
+            'exclusive_chat',
+            'priority_support',
+            'teleport_command',
+            'god_mode',
+            'vehicle_spawn',
+            'weapon_spawn',
+        },
+        vehicles = 'all_super',
+        weapons = 'all_legal',
+        money_multiplier = 2.0,
+        xp_multiplier = 1.5,
+    },
+}
+```
+
+### Benefits System
+```lua
+Config.Benefits = {
+    ['spawn_protection'] = {
+        enabled = true,
+        duration = 30, -- seconds
+        description = 'Spawn protection for 30 seconds'
+    },
+    
+    ['exclusive_chat'] = {
+        enabled = true,
+        color = '#FFD700',
+        prefix = '[VIP]',
+        description = 'Access to VIP chat channel'
+    },
+    
+    ['teleport_command'] = {
+        enabled = true,
+        cooldown = 300, -- seconds
+        cost = 0,
+        description = 'Teleport to waypoint every 5 minutes'
+    },
+    
+    ['priority_support'] = {
+        enabled = true,
+        queue_position = 1,
+        description = 'Priority in support queue'
+    },
+}
+```
+
+## Commands
+
+### Player Commands
+```
+/vip - Open VIP menu
+/vipmenu - Open VIP management panel
+/vipstatus - Check VIP status and benefits
+/viptp - Teleport to waypoint (VIP required)
+/vipveh [vehicle] - Spawn VIP vehicle
+/vipweapon [weapon] - Get VIP weapon
+```
+
+### Admin Commands
+```
+/givevip [id] [tier] [duration] - Give VIP to player
+/removevip [id] - Remove VIP from player
+/checkvip [id] - Check player's VIP status
+/viplist - List all VIP players
+/viprefresh - Refresh VIP data
+```
+
+## API Reference
+
+### Server-Side Exports
+
+#### VIP Management
+```lua
+-- Give VIP to player
+exports.seba_vip:GiveVIP(playerId, tier, duration)
+
+-- Remove VIP from player
+exports.seba_vip:RemoveVIP(playerId)
+
+-- Check if player has VIP
+local hasVIP = exports.seba_vip:HasVIP(playerId)
+
+-- Get player's VIP tier
+local tier = exports.seba_vip:GetVIPTier(playerId)
+
+-- Get VIP expiry date
+local expiry = exports.seba_vip:GetVIPExpiry(playerId)
+```
+
+#### Benefit Management
+```lua
+-- Check if player has specific benefit
+local hasBenefit = exports.seba_vip:HasBenefit(playerId, 'spawn_protection')
+
+-- Apply benefit multiplier
+local amount = exports.seba_vip:ApplyMultiplier(playerId, 'money', baseAmount)
+
+-- Get all player benefits
+local benefits = exports.seba_vip:GetPlayerBenefits(playerId)
+```
+
+### Client-Side Functions
+
+#### UI Management
+```lua
+-- Open VIP menu
+exports.seba_vip:OpenVIPMenu()
+
+-- Close VIP menu
+exports.seba_vip:CloseVIPMenu()
+
+-- Show VIP notification
+exports.seba_vip:ShowVIPNotification(message, type)
+```
+
+## Events
+
+### Server Events
+
+#### seba_vip:playerGotVIP
+```lua
+AddEventHandler('seba_vip:playerGotVIP', function(playerId, tier, duration)
+    print(GetPlayerName(playerId) .. ' received ' .. tier .. ' VIP for ' .. duration .. ' days')
+end)
+```
+
+#### seba_vip:playerLostVIP
+```lua
+AddEventHandler('seba_vip:playerLostVIP', function(playerId, tier)
+    print(GetPlayerName(playerId) .. ' lost ' .. tier .. ' VIP status')
+end)
+```
+
+#### seba_vip:benefitUsed
+```lua
+AddEventHandler('seba_vip:benefitUsed', function(playerId, benefit)
+    print(GetPlayerName(playerId) .. ' used benefit: ' .. benefit)
+end)
+```
+
+### Client Events
+
+#### seba_vip:statusUpdated
+```lua
+AddEventHandler('seba_vip:statusUpdated', function(vipData)
+    -- Update UI with new VIP status
+    SendNUIMessage({
+        action = 'updateVIPStatus',
+        data = vipData
+    })
+end)
+```
+
+#### seba_vip:benefitReceived
+```lua
+AddEventHandler('seba_vip:benefitReceived', function(benefit, data)
+    -- Handle benefit activation
+    if benefit == 'spawn_protection' then
+        SetPlayerInvincible(PlayerId(), true)
+        SetTimeout(data.duration * 1000, function()
+            SetPlayerInvincible(PlayerId(), false)
+        end)
+    end
+end)
+```
+
+## Payment Integration
+
+### PayPal Integration
+```lua
+Config.PayPal = {
+    enabled = true,
+    clientId = 'your_paypal_client_id',
+    clientSecret = 'your_paypal_client_secret',
+    sandbox = true, -- Use sandbox for testing
+    webhookId = 'your_webhook_id',
+}
+```
+
+### Stripe Integration
+```lua
+Config.Stripe = {
+    enabled = false,
+    publicKey = 'pk_test_...',
+    secretKey = 'sk_test_...',
+    webhookSecret = 'whsec_...',
+}
+```
+
+### Custom Payment Handler
+```lua
+RegisterServerEvent('seba_vip:customPayment')
+AddEventHandler('seba_vip:customPayment', function(paymentData)
+    local src = source
+    
+    -- Validate payment with your custom system
+    if ValidatePayment(paymentData) then
+        exports.seba_vip:GiveVIP(src, paymentData.tier, paymentData.duration)
+        
+        TriggerClientEvent('seba_vip:paymentSuccess', src, {
+            tier = paymentData.tier,
+            duration = paymentData.duration
+        })
+    else
+        TriggerClientEvent('seba_vip:paymentFailed', src, 'Payment validation failed')
+    end
+end)
+```
+
+## Usage Examples
+
+### Custom Benefit Implementation
+```lua
+-- Server-side custom benefit
+RegisterServerEvent('myserver:useCustomBenefit')
+AddEventHandler('myserver:useCustomBenefit', function()
+    local src = source
+    
+    if exports.seba_vip:HasBenefit(src, 'custom_teleport') then
+        -- Allow teleportation
+        TriggerClientEvent('myserver:allowTeleport', src)
+    else
+        TriggerClientEvent('chat:addMessage', src, {
+            color = {255, 0, 0},
+            multiline = true,
+            args = {"System", "This feature requires VIP membership!"}
+        })
+    end
+end)
+```
+
+### VIP-Only Areas
+```lua
+-- Create VIP-only zones
+CreateThread(function()
+    while true do
+        local playerPed = PlayerPedId()
+        local coords = GetEntityCoords(playerPed)
+        
+        -- Check if player is in VIP area
+        if IsPlayerInVIPArea(coords) then
+            if not exports.seba_vip:HasVIP(GetPlayerServerId(PlayerId())) then
+                -- Teleport non-VIP players out
+                SetEntityCoords(playerPed, -1037.5, -2737.6, 20.2)
+                ShowNotification('This area is VIP only!')
+            end
+        end
+        
+        Wait(5000)
+    end
+end)
+```
+
+### Economy Integration
+```lua
+-- Apply VIP multiplier to job payments
+RegisterServerEvent('jobs:payPlayer')
+AddEventHandler('jobs:payPlayer', function(amount)
+    local src = source
+    local finalAmount = exports.seba_vip:ApplyMultiplier(src, 'money', amount)
+    
+    -- Pay the player with VIP bonus
+    AddMoney(src, finalAmount)
+    
+    if finalAmount > amount then
+        TriggerClientEvent('chat:addMessage', src, {
+            color = {0, 255, 0},
+            multiline = true,
+            args = {"VIP Bonus", "You received a VIP bonus of $" .. (finalAmount - amount)}
+        })
+    end
+end)
+```
+
+### Automated VIP Expiry Check
+```lua
+-- Check for expired VIP memberships
+CreateThread(function()
+    while true do
+        local vipPlayers = exports.seba_vip:GetAllVIPPlayers()
+        
+        for _, player in ipairs(vipPlayers) do
+            local expiry = exports.seba_vip:GetVIPExpiry(player.id)
+            
+            if expiry and expiry < os.time() then
+                exports.seba_vip:RemoveVIP(player.id)
+                
+                if GetPlayerPing(player.id) > 0 then -- Player is online
+                    TriggerClientEvent('seba_vip:membershipExpired', player.id)
+                end
+            end
+        end
+        
+        Wait(300000) -- Check every 5 minutes
+    end
+end)
+```
+
+## Web Panel Integration
+
+### Admin Panel
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seba VIP Admin Panel</title>
+    <link rel="stylesheet" href="assets/admin.css">
+</head>
+<body>
+    <div class="admin-panel">
+        <h1>VIP Management</h1>
+        
+        <div class="vip-stats">
+            <div class="stat-card">
+                <h3>Active VIP Members</h3>
+                <span id="vip-count">0</span>
+            </div>
+            <div class="stat-card">
+                <h3>Monthly Revenue</h3>
+                <span id="monthly-revenue">$0</span>
+            </div>
+        </div>
+        
+        <div class="vip-actions">
+            <button onclick="refreshVIPData()">Refresh Data</button>
+            <button onclick="showAddVIPModal()">Add VIP</button>
+            <button onclick="exportVIPData()">Export Data</button>
+        </div>
+        
+        <div class="vip-list">
+            <table id="vip-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Tier</th>
+                        <th>Expiry</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vip-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="assets/admin.js"></script>
+</body>
+</html>
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### VIP Not Activating
+- Check database connection
+- Verify player identifiers are correct
+- Check for case-sensitive tier names
+- Ensure resource is properly started
+
+#### Payment Issues
+- Verify payment gateway configuration
+- Check webhook URLs are correct
+- Ensure SSL certificates are valid
+- Test with sandbox/test modes first
+
+#### Benefits Not Working
+- Check benefit configuration
+- Verify event handlers are registered
+- Check for conflicts with other resources
+- Enable debug mode for detailed logs
+
+### Debug Mode
+```lua
+Config.Debug = true
+```
+
+This enables:
+- Detailed console logging
+- Payment transaction logs
+- Benefit activation logs
+- Error tracking
+
+## Performance Tips
+
+1. **Database Optimization**: Index VIP tables properly
+2. **Cache VIP Data**: Cache frequently accessed VIP information
+3. **Limit Benefit Checks**: Don't check VIP status too frequently
+4. **Optimize Multipliers**: Cache calculated multipliers
+5. **Clean Up Expired**: Regularly clean up expired VIP records
+
+## Changelog
+
+### Version 2.2.0
+- Added Stripe payment integration
+- Enhanced admin panel
+- Improved performance with caching
+- Added gift system
+
+### Version 2.1.0
+- Added PayPal integration
+- Enhanced UI with multiple themes
+- Improved benefit system
+- Bug fixes and optimizations
+
+### Version 2.0.0
+- Complete rewrite with modern architecture
+- Added multiple payment gateways
+- Enhanced admin features
+- Improved security
+
+---
+
+**Status:** ✅ Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**License:** MIT

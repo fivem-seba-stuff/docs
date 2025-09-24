@@ -1,0 +1,1314 @@
+# Level System
+
+**Level System** is a comprehensive player progression system for FiveM servers, featuring experience points, skill trees, achievements, and rewards to enhance long-term player engagement.
+
+## Description
+
+The Level System provides a robust progression framework that tracks player activities, awards experience points, manages skill development, and offers meaningful rewards. Perfect for roleplay servers looking to add depth and progression to their gameplay experience with professional-grade progression mechanics.
+
+## Features
+
+### Experience & Leveling
+- Multiple XP categories including Combat, Driving, Criminal, Legal, and Social activities
+- Configurable progression curves with customizable XP requirements and level scaling
+- Advanced prestige system allowing players to reset levels for additional bonuses
+- Time-based bonus system with daily and weekly XP multipliers
+
+### Skill Trees
+- Branching skill paths with multiple specialization routes and advancement options
+- Skill point economy earned through leveling and specific activities
+- Passive bonus system providing permanent improvements to gameplay mechanics
+- Active ability system with unlockable special abilities and cooldown management
+
+### Achievement System
+- Comprehensive challenge catalog with hundreds of unique achievement objectives
+- Progress tracking system for complex multi-stage achievements and goals
+- Automated reward integration with immediate prize distribution
+- Competitive leaderboard system with various ranking categories and statistics
+
+## Installation
+
+### Requirements
+- FiveM Server (latest version recommended)
+- Compatible framework (ESX, QBCore, or Standalone)
+- seba_core dependency (required)
+- MySQL or MariaDB database
+
+### Setup Process
+
+1. Ensure seba_core is installed and running properly
+2. Download the latest version from the repository
+3. Extract files to your server's resources folder
+4. Import the `database.sql` file into your database
+5. Configure framework integration in `config.lua`
+6. Add to server.cfg:
+   ```cfg
+   ensure seba_core
+   ensure level_system
+   ```
+7. Configure achievement definitions and skill trees
+8. Restart your server
+
+## Configuration
+
+### Settings
+
+#### Basic Configuration
+```lua
+Config = {
+    -- Framework (handled by seba_core)
+    Framework = 'auto',
+    
+    -- Experience system settings
+    MaxLevel = 100,
+    PrestigeEnabled = true,
+    MaxPrestige = 5,
+    
+    -- XP multiplier configuration
+    BaseXPMultiplier = 1.0,
+    VIPXPMultiplier = 1.5,
+    WeekendBonus = 1.2,
+    
+    -- UI configuration
+    ShowLevelUps = true,
+    ShowXPGains = true,
+    NotificationDuration = 5000,
+    
+    -- Database settings
+    SaveInterval = 300, -- seconds
+    AutoSave = true,
+}
+```
+
+#### XP Categories Configuration
+```lua
+Config.XPCategories = {
+    ['combat'] = {
+        label = 'Combat',
+        color = '#FF0000',
+        icon = 'fas fa-crosshairs',
+        max_level = 50,
+        xp_curve = 'exponential',
+    },
+    
+    ['driving'] = {
+        label = 'Driving',
+        color = '#00FF00',
+        icon = 'fas fa-car',
+        max_level = 40,
+        xp_curve = 'linear',
+    },
+    
+    ['criminal'] = {
+        label = 'Criminal',
+        color = '#800080',
+        icon = 'fas fa-mask',
+        max_level = 30,
+        xp_curve = 'logarithmic',
+    },
+    
+    ['legal'] = {
+        label = 'Legal Work',
+        color = '#0000FF',
+        icon = 'fas fa-briefcase',
+        max_level = 35,
+        xp_curve = 'exponential',
+    },
+    
+    ['social'] = {
+        label = 'Social',
+        color = '#FFD700',
+        icon = 'fas fa-users',
+        max_level = 25,
+        xp_curve = 'linear',
+    },
+}
+```
+
+#### Skill Trees Configuration
+```lua
+Config.SkillTrees = {
+    ['combat'] = {
+        ['weapon_handling'] = {
+            name = 'Weapon Handling',
+            description = 'Improved accuracy and reload speed',
+            max_rank = 5,
+            cost_per_rank = 2,
+            requirements = {level = 5},
+            effects = {
+                accuracy_bonus = 2, -- per rank
+                reload_speed_bonus = 5, -- per rank
+            }
+        },
+        
+        ['combat_medic'] = {
+            name = 'Combat Medic',
+            description = 'Heal faster and revive others',
+            max_rank = 3,
+            cost_per_rank = 3,
+            requirements = {
+                level = 15,
+                skills = {'weapon_handling:3'}
+            },
+            effects = {
+                heal_speed_bonus = 25, -- per rank
+                revive_ability = true, -- rank 3
+            }
+        },
+    },
+}
+```
+
+## Commands
+
+### Player Commands
+```
+/level - Show comprehensive level statistics and progression
+/skills - Open skill tree management interface
+/achievements - View achievements and progress tracking
+/leaderboard - Display server leaderboards and rankings
+/prestige - Prestige your character (if eligible)
+/stats - Detailed character statistics and analytics
+```
+
+### Administrative Commands
+```
+/givexp [id] [category] [amount] - Award XP to specified player
+/setlevel [id] [category] [level] - Set player level directly
+/resetlevel [id] [category] - Reset player level and progress
+/giveskillpoints [id] [amount] - Grant skill points to player
+/unlockachievement [id] [achievement] - Unlock achievement for player
+```
+
+## Server Functions
+
+### Experience Management
+
+#### GiveXP
+```lua
+exports.level_system:GiveXP(playerId, category, amount, reason)
+```
+Award experience points to a player in a specific category.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `category` (string): XP category ('combat', 'driving', etc.)
+- `amount` (number): XP amount to award
+- `reason` (string): Description of XP source
+
+**Example:**
+```lua
+exports.level_system:GiveXP(1, 'combat', 100, 'Enemy defeated')
+```
+
+#### GetXP
+```lua
+local xp = exports.level_system:GetXP(playerId, category)
+```
+Get player's current XP in a category.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `category` (string): XP category to check
+
+**Returns:**
+- `xp` (number): Current XP amount
+
+#### GetLevel
+```lua
+local level = exports.level_system:GetLevel(playerId, category)
+```
+Get player's current level in a category.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `category` (string): Category to check
+
+**Returns:**
+- `level` (number): Current level
+
+#### GetXPRequired
+```lua
+local required = exports.level_system:GetXPRequired(playerId, category)
+```
+Get XP required for next level.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `category` (string): Category to check
+
+**Returns:**
+- `required` (number): XP needed for next level
+
+### Skill System
+
+#### GetSkillPoints
+```lua
+local skillPoints = exports.level_system:GetSkillPoints(playerId)
+```
+Get player's available skill points.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+
+**Returns:**
+- `skillPoints` (number): Available skill points
+
+#### GiveSkillPoints
+```lua
+exports.level_system:GiveSkillPoints(playerId, amount)
+```
+Grant skill points to a player.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `amount` (number): Skill points to grant
+
+#### HasSkill
+```lua
+local hasSkill = exports.level_system:HasSkill(playerId, skillId, rank)
+```
+Check if player has a skill at specific rank.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `skillId` (string): Skill identifier
+- `rank` (number): Minimum rank required
+
+**Returns:**
+- `hasSkill` (boolean): Skill availability
+
+#### GetSkillRank
+```lua
+local rank = exports.level_system:GetSkillRank(playerId, skillId)
+```
+Get player's skill rank.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `skillId` (string): Skill identifier
+
+**Returns:**
+- `rank` (number): Current skill rank
+
+### Achievement System
+
+#### GetAchievementProgress
+```lua
+local progress = exports.level_system:GetAchievementProgress(playerId, achievementId)
+```
+Check achievement progress for a player.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `achievementId` (string): Achievement identifier
+
+**Returns:**
+- `progress` (number): Current progress value
+
+#### UnlockAchievement
+```lua
+exports.level_system:UnlockAchievement(playerId, achievementId)
+```
+Unlock an achievement for a player.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `achievementId` (string): Achievement identifier
+
+#### HasAchievement
+```lua
+local isUnlocked = exports.level_system:HasAchievement(playerId, achievementId)
+```
+Check if player has unlocked an achievement.
+
+**Parameters:**
+- `playerId` (number): Player's server ID
+- `achievementId` (string): Achievement identifier
+
+**Returns:**
+- `isUnlocked` (boolean): Achievement status
+
+## Client Functions
+
+### UI Management
+
+#### OpenLevelInterface
+```lua
+exports.level_system:OpenLevelInterface()
+```
+Open the level progression interface.
+
+#### OpenSkillTree
+```lua
+exports.level_system:OpenSkillTree(category)
+```
+Open skill tree for specific category.
+
+**Parameters:**
+- `category` (string): Skill category to display
+
+#### ShowXPNotification
+```lua
+exports.level_system:ShowXPNotification(category, amount, reason)
+```
+Display XP gain notification.
+
+**Parameters:**
+- `category` (string): XP category
+- `amount` (number): XP amount gained
+- `reason` (string): XP source description
+
+## Events
+
+### Server Events
+
+#### level_system:playerLevelUp
+Triggered when a player levels up.
+
+```lua
+AddEventHandler('level_system:playerLevelUp', function(playerId, category, newLevel, oldLevel)
+    local playerName = GetPlayerName(playerId)
+    print(playerName .. ' leveled up in ' .. category .. ' to level ' .. newLevel)
+    
+    if category == 'combat' and newLevel == 10 then
+        exports.level_system:GiveSkillPoints(playerId, 2)
+    end
+end)
+```
+
+#### level_system:achievementUnlocked
+Triggered when an achievement is unlocked.
+
+```lua
+AddEventHandler('level_system:achievementUnlocked', function(playerId, achievementId, achievementData)
+    local playerName = GetPlayerName(playerId)
+    
+    TriggerClientEvent('chat:addMessage', -1, {
+        color = {255, 215, 0},
+        args = {"Achievement", playerName .. " unlocked: " .. achievementData.name}
+    })
+end)
+```
+
+#### level_system:skillLearned
+Triggered when a skill is learned or upgraded.
+
+```lua
+AddEventHandler('level_system:skillLearned', function(playerId, skillId, rank)
+    local playerName = GetPlayerName(playerId)
+    print(playerName .. ' learned ' .. skillId .. ' rank ' .. rank)
+end)
+```
+
+### Client Events
+
+#### level_system:xpGained
+Triggered when XP is gained.
+
+```lua
+AddEventHandler('level_system:xpGained', function(category, amount, reason, newXP, newLevel)
+    SendNUIMessage({
+        action = 'showXPGain',
+        category = category,
+        amount = amount,
+        reason = reason
+    })
+end)
+```
+
+## Usage Examples
+
+### Automatic XP Tracking
+
+```lua
+AddEventHandler('gameEventTriggered', function(name, args)
+    if name == 'CEventNetworkEntityDamage' then
+        local victim = args[1]
+        local attacker = args[2]
+        local damage = args[6]
+        
+        if IsEntityAPed(victim) and IsEntityAPed(attacker) then
+            local attackerId = NetworkGetPlayerIndexFromPed(attacker)
+            if attackerId then
+                exports.level_system:GiveXP(attackerId, 'combat', damage / 10, 'Combat damage dealt')
+            end
+        end
+    end
+end)
+```
+
+### Job Integration with XP Rewards
+
+```lua
+RegisterServerEvent('jobs:onJobComplete')
+AddEventHandler('jobs:onJobComplete', function(jobType, payment)
+    local src = source
+    
+    local xpRewards = {
+        ['police'] = {category = 'legal', amount = payment / 5, reason = 'Police work'},
+        ['mechanic'] = {category = 'driving', amount = payment / 3, reason = 'Mechanic work'},
+        ['taxi'] = {category = 'driving', amount = payment / 4, reason = 'Taxi driving'}
+    }
+    
+    local reward = xpRewards[jobType]
+    if reward then
+        exports.level_system:GiveXP(src, reward.category, reward.amount, reward.reason)
+    end
+end)
+```
+
+### Level-Based Access Control
+
+```lua
+RegisterServerEvent('weapons:requestWeapon')
+AddEventHandler('weapons:requestWeapon', function(weaponName)
+    local src = source
+    local combatLevel = exports.level_system:GetLevel(src, 'combat')
+    
+    local weaponRequirements = {
+        ['WEAPON_PISTOL'] = 5,
+        ['WEAPON_SMG'] = 15,
+        ['WEAPON_ASSAULTRIFLE'] = 25,
+        ['WEAPON_SNIPERRIFLE'] = 40,
+    }
+    
+    local requiredLevel = weaponRequirements[weaponName]
+    
+    if requiredLevel and combatLevel >= requiredLevel then
+        TriggerClientEvent('weapons:giveWeapon', src, weaponName)
+    else
+        TriggerClientEvent('chat:addMessage', src, {
+            color = {255, 0, 0},
+            args = {"System", "Requires combat level " .. requiredLevel .. " (Current: " .. combatLevel .. ")"}
+        })
+    end
+end)
+```
+
+### Achievement Progress Tracking
+
+```lua
+local playerStats = {}
+
+AddEventHandler('level_system:playerLoaded', function(playerId)
+    playerStats[playerId] = {
+        uniquePlayersSpokeWith = {},
+        totalDistanceDriven = 0,
+        enemiesKilled = 0,
+        moneyEarned = 0,
+    }
+end)
+
+RegisterServerEvent('level_system:playerInteraction')
+AddEventHandler('level_system:playerInteraction', function(targetPlayerId)
+    local src = source
+    
+    if not playerStats[src] then return end
+    
+    if not playerStats[src].uniquePlayersSpokeWith[targetPlayerId] then
+        playerStats[src].uniquePlayersSpokeWith[targetPlayerId] = true
+        
+        local uniqueCount = 0
+        for _ in pairs(playerStats[src].uniquePlayersSpokeWith) do
+            uniqueCount = uniqueCount + 1
+        end
+        
+        if uniqueCount >= 50 then
+            exports.level_system:UnlockAchievement(src, 'social_butterfly')
+        end
+    end
+end)
+```
+
+## Database Schema
+
+### Player Levels Table
+```sql
+CREATE TABLE `level_system_players` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `identifier` varchar(50) NOT NULL,
+    `category` varchar(50) NOT NULL,
+    `level` int(11) DEFAULT 1,
+    `xp` bigint(20) DEFAULT 0,
+    `prestige` int(11) DEFAULT 0,
+    `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`identifier`, `category`),
+    INDEX (`level`, `xp`)
+);
+```
+
+### Skills Table
+```sql
+CREATE TABLE `level_system_skills` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `identifier` varchar(50) NOT NULL,
+    `skill_id` varchar(50) NOT NULL,
+    `rank` int(11) DEFAULT 0,
+    `unlocked_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`identifier`, `skill_id`),
+    INDEX (`rank`)
+);
+```
+
+### Achievements Table
+```sql
+CREATE TABLE `level_system_achievements` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `identifier` varchar(50) NOT NULL,
+    `achievement_id` varchar(50) NOT NULL,
+    `progress` int(11) DEFAULT 0,
+    `completed` tinyint(1) DEFAULT 0,
+    `completed_at` timestamp NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`identifier`, `achievement_id`),
+    INDEX (`completed`)
+);
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### XP Not Saving Properly
+- Verify database connection and ensure all tables exist
+- Check auto-save configuration and SaveInterval settings
+- Review server console for SQL errors or connection issues
+- Confirm proper player identifier storage and retrieval
+
+#### Skills Not Applying Effects
+- Verify skill configuration matches expected structure
+- Check that skill effect event handlers are properly registered
+- Test skill effects manually using admin commands
+- Look for conflicts with other resources affecting gameplay mechanics
+
+#### Achievement Progress Not Tracking
+- Confirm achievement definitions are properly configured
+- Verify progress tracking logic and trigger conditions
+- Check achievement progress values in database
+- Ensure achievement unlock conditions are being met correctly
+
+#### Performance Issues with High Player Count
+- Monitor database query performance and optimize indexes
+- Reduce save interval frequency for high-traffic servers
+- Implement caching for frequently accessed player data
+- Consider batching XP updates to reduce database writes
+
+---
+
+**Status:** Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**Dependencies:** seba_core (required)  
+**License:** MIT
+
+## Installation
+
+### Requirements
+- **FiveM Server**: Latest version
+- **Framework**: ESX, QBCore, or Standalone
+- **Dependencies**: seba_core (required)
+- **Database**: MySQL or MariaDB
+
+### Setup Process
+
+1. **Ensure** seba_core is installed and running
+2. **Download** the latest version
+3. **Extract** to your resources folder
+4. **Import** `database.sql` to your database
+5. **Configure** settings in `config.lua`
+6. **Add** to server.cfg:
+   ```cfg
+   ensure seba_core
+   ensure level_system
+   ```
+
+## Configuration
+
+### Basic Configuration
+```lua
+Config = {
+    -- Framework (handled by seba_core)
+    Framework = 'auto',
+    
+    -- Experience settings
+    MaxLevel = 100,
+    PrestigeEnabled = true,
+    MaxPrestige = 5,
+    
+    -- XP multipliers
+    BaseXPMultiplier = 1.0,
+    VIPXPMultiplier = 1.5,
+    WeekendBonus = 1.2,
+    
+    -- UI settings
+    ShowLevelUps = true,
+    ShowXPGains = true,
+    NotificationDuration = 5000,
+    
+    -- Database
+    SaveInterval = 300, -- seconds
+    AutoSave = true,
+}
+```
+
+### XP Categories
+```lua
+Config.XPCategories = {
+    ['combat'] = {
+        label = 'Combat',
+        color = '#FF0000',
+        icon = 'fas fa-crosshairs',
+        max_level = 50,
+        xp_curve = 'exponential',
+    },
+    
+    ['driving'] = {
+        label = 'Driving',
+        color = '#00FF00',
+        icon = 'fas fa-car',
+        max_level = 40,
+        xp_curve = 'linear',
+    },
+    
+    ['criminal'] = {
+        label = 'Criminal',
+        color = '#800080',
+        icon = 'fas fa-mask',
+        max_level = 30,
+        xp_curve = 'logarithmic',
+    },
+    
+    ['legal'] = {
+        label = 'Legal Work',
+        color = '#0000FF',
+        icon = 'fas fa-briefcase',
+        max_level = 35,
+        xp_curve = 'exponential',
+    },
+    
+    ['social'] = {
+        label = 'Social',
+        color = '#FFD700',
+        icon = 'fas fa-users',
+        max_level = 25,
+        xp_curve = 'linear',
+    },
+}
+```
+
+### Skill Trees
+```lua
+Config.SkillTrees = {
+    ['combat'] = {
+        ['weapon_handling'] = {
+            name = 'Weapon Handling',
+            description = 'Improved accuracy and reload speed',
+            max_rank = 5,
+            cost_per_rank = 2,
+            requirements = {level = 5},
+            effects = {
+                accuracy_bonus = 2, -- per rank
+                reload_speed_bonus = 5, -- per rank
+            }
+        },
+        
+        ['combat_medic'] = {
+            name = 'Combat Medic',
+            description = 'Heal faster and revive others',
+            max_rank = 3,
+            cost_per_rank = 3,
+            requirements = {
+                level = 15,
+                skills = {'weapon_handling:3'}
+            },
+            effects = {
+                heal_speed_bonus = 25, -- per rank
+                revive_ability = true, -- rank 3
+            }
+        },
+    },
+    
+    ['driving'] = {
+        ['speed_demon'] = {
+            name = 'Speed Demon',
+            description = 'Increased vehicle top speed',
+            max_rank = 4,
+            cost_per_rank = 2,
+            requirements = {level = 10},
+            effects = {
+                top_speed_bonus = 5, -- per rank
+                acceleration_bonus = 3, -- per rank
+            }
+        },
+        
+        ['mechanic'] = {
+            name = 'Mechanic',
+            description = 'Repair vehicles faster',
+            max_rank = 3,
+            cost_per_rank = 3,
+            requirements = {level = 20},
+            effects = {
+                repair_speed_bonus = 30, -- per rank
+                repair_cost_reduction = 10, -- per rank
+            }
+        },
+    },
+}
+```
+
+### Achievement Configuration
+```lua
+Config.Achievements = {
+    ['first_steps'] = {
+        name = 'First Steps',
+        description = 'Reach level 5',
+        category = 'progression',
+        condition = {
+            type = 'level',
+            value = 5
+        },
+        rewards = {
+            money = 500,
+            xp = 100,
+            items = {'bread:5'}
+        }
+    },
+    
+    ['speed_racer'] = {
+        name = 'Speed Racer',
+        description = 'Drive over 200 km/h for 60 seconds',
+        category = 'driving',
+        condition = {
+            type = 'driving_speed',
+            speed = 200,
+            duration = 60
+        },
+        rewards = {
+            xp_driving = 500,
+            money = 1000
+        }
+    },
+    
+    ['social_butterfly'] = {
+        name = 'Social Butterfly',
+        description = 'Talk to 50 different players',
+        category = 'social',
+        condition = {
+            type = 'unique_interactions',
+            count = 50
+        },
+        rewards = {
+            xp_social = 750,
+            skill_points = 2
+        }
+    },
+}
+```
+
+## Commands
+
+### Player Commands
+```
+/level - Show level statistics and progress
+/skills - Open skill tree interface
+/achievements - View achievements and progress
+/leaderboard - Show server leaderboards
+/prestige - Prestige your character (if eligible)
+/stats - Detailed character statistics
+```
+
+### Admin Commands
+```
+/givexp [id] [category] [amount] - Give XP to player
+/setlevel [id] [category] [level] - Set player level
+/resetlevel [id] [category] - Reset player level
+/giveskillpoints [id] [amount] - Give skill points
+/unlockachievement [id] [achievement] - Unlock achievement
+```
+
+## API Reference
+
+### Server-Side Exports
+
+#### Experience Management
+```lua
+-- Give XP to player
+exports.level_system:GiveXP(playerId, category, amount, reason)
+
+-- Get player's XP
+local xp = exports.level_system:GetXP(playerId, category)
+
+-- Get player's level
+local level = exports.level_system:GetLevel(playerId, category)
+
+-- Get XP required for next level
+local required = exports.level_system:GetXPRequired(playerId, category)
+```
+
+#### Skill System
+```lua
+-- Get player's skill points
+local skillPoints = exports.level_system:GetSkillPoints(playerId)
+
+-- Give skill points
+exports.level_system:GiveSkillPoints(playerId, amount)
+
+-- Check if player has skill
+local hasSkill = exports.level_system:HasSkill(playerId, skillId, rank)
+
+-- Get skill rank
+local rank = exports.level_system:GetSkillRank(playerId, skillId)
+```
+
+#### Achievement System
+```lua
+-- Check achievement progress
+local progress = exports.level_system:GetAchievementProgress(playerId, achievementId)
+
+-- Unlock achievement
+exports.level_system:UnlockAchievement(playerId, achievementId)
+
+-- Check if achievement is unlocked
+local isUnlocked = exports.level_system:HasAchievement(playerId, achievementId)
+```
+
+### Client-Side Functions
+
+#### UI Management
+```lua
+-- Open level interface
+exports.level_system:OpenLevelInterface()
+
+-- Open skill tree
+exports.level_system:OpenSkillTree(category)
+
+-- Show XP notification
+exports.level_system:ShowXPNotification(category, amount, reason)
+```
+
+## Events
+
+### Server Events
+
+#### level_system:playerLevelUp
+```lua
+AddEventHandler('level_system:playerLevelUp', function(playerId, category, newLevel, oldLevel)
+    local playerName = GetPlayerName(playerId)
+    print(playerName .. ' leveled up in ' .. category .. ' to level ' .. newLevel)
+    
+    -- Give level-up rewards
+    if category == 'combat' and newLevel == 10 then
+        exports.level_system:GiveSkillPoints(playerId, 2)
+    end
+end)
+```
+
+#### level_system:achievementUnlocked
+```lua
+AddEventHandler('level_system:achievementUnlocked', function(playerId, achievementId, achievementData)
+    local playerName = GetPlayerName(playerId)
+    
+    -- Announce achievement
+    TriggerClientEvent('chat:addMessage', -1, {
+        color = {255, 215, 0},
+        multiline = true,
+        args = {"Achievement", playerName .. " unlocked: " .. achievementData.name}
+    })
+end)
+```
+
+#### level_system:skillLearned
+```lua
+AddEventHandler('level_system:skillLearned', function(playerId, skillId, rank)
+    local playerName = GetPlayerName(playerId)
+    print(playerName .. ' learned ' .. skillId .. ' rank ' .. rank)
+end)
+```
+
+### Client Events
+
+#### level_system:xpGained
+```lua
+AddEventHandler('level_system:xpGained', function(category, amount, reason, newXP, newLevel)
+    -- Show custom XP notification
+    SendNUIMessage({
+        action = 'showXPGain',
+        category = category,
+        amount = amount,
+        reason = reason
+    })
+end)
+```
+
+## XP Sources
+
+### Automatic XP Tracking
+```lua
+-- Combat XP
+AddEventHandler('gameEventTriggered', function(name, args)
+    if name == 'CEventNetworkEntityDamage' then
+        local victim = args[1]
+        local attacker = args[2]
+        local damage = args[6]
+        
+        if IsEntityAPed(victim) and IsEntityAPed(attacker) then
+            local attackerId = NetworkGetPlayerIndexFromPed(attacker)
+            if attackerId then
+                exports.level_system:GiveXP(attackerId, 'combat', damage / 10, 'Combat damage dealt')
+            end
+        end
+    end
+end)
+
+-- Driving XP
+CreateThread(function()
+    while true do
+        for _, playerId in ipairs(GetPlayers()) do
+            local ped = GetPlayerPed(playerId)
+            if IsPedInAnyVehicle(ped, false) then
+                local vehicle = GetVehiclePedIsIn(ped, false)
+                local speed = GetEntitySpeed(vehicle) * 3.6 -- Convert to km/h
+                
+                if speed > 30 then
+                    local xpAmount = math.floor(speed / 20)
+                    exports.level_system:GiveXP(playerId, 'driving', xpAmount, 'Driving')
+                end
+            end
+        end
+        Wait(10000) -- Check every 10 seconds
+    end
+end)
+```
+
+### Job Integration
+```lua
+-- Give XP for job activities
+RegisterServerEvent('jobs:onJobComplete')
+AddEventHandler('jobs:onJobComplete', function(jobType, payment)
+    local src = source
+    
+    if jobType == 'police' then
+        exports.level_system:GiveXP(src, 'legal', payment / 5, 'Police work')
+    elseif jobType == 'mechanic' then
+        exports.level_system:GiveXP(src, 'driving', payment / 3, 'Mechanic work')
+    elseif jobType == 'taxi' then
+        exports.level_system:GiveXP(src, 'driving', payment / 4, 'Taxi driving')
+        exports.level_system:GiveXP(src, 'social', 50, 'Customer service')
+    end
+end)
+```
+
+## Skill Effects Implementation
+
+### Combat Skills
+```lua
+-- Apply weapon handling bonuses
+AddEventHandler('level_system:skillEffect', function(playerId, skillId, rank, effectType)
+    if skillId == 'weapon_handling' then
+        local ped = GetPlayerPed(playerId)
+        
+        if effectType == 'accuracy_bonus' then
+            -- Increase weapon accuracy
+            local bonus = rank * 2 -- 2% per rank
+            SetPlayerWeaponDamageModifier(playerId, 1.0 + (bonus / 100))
+        elseif effectType == 'reload_speed_bonus' then
+            -- Increase reload speed
+            local bonus = rank * 5 -- 5% per rank
+            SetWeaponReloadTimeMultiplier(ped, 1.0 - (bonus / 100))
+        end
+    end
+end)
+```
+
+### Driving Skills
+```lua
+-- Apply driving bonuses
+AddEventHandler('playerEnteredScope', function(data)
+    local playerId = data.player
+    local ped = GetPlayerPed(playerId)
+    
+    if IsPedInAnyVehicle(ped, false) then
+        local vehicle = GetVehiclePedIsIn(ped, false)
+        local speedDemonRank = exports.level_system:GetSkillRank(playerId, 'speed_demon')
+        
+        if speedDemonRank > 0 then
+            local speedBonus = speedDemonRank * 5 -- 5% per rank
+            local currentMultiplier = GetVehicleEnginePowerMultiplier(vehicle)
+            SetVehicleEnginePowerMultiplier(vehicle, currentMultiplier * (1.0 + speedBonus / 100))
+        end
+    end
+end)
+```
+
+## Achievement Tracking
+
+### Custom Achievement Checks
+```lua
+-- Track player statistics for achievements
+local playerStats = {}
+
+-- Initialize player stats
+AddEventHandler('level_system:playerLoaded', function(playerId)
+    playerStats[playerId] = {
+        uniquePlayersSpokeWith = {},
+        totalDistanceDriven = 0,
+        enemiesKilled = 0,
+        moneyEarned = 0,
+    }
+end)
+
+-- Track unique player interactions
+RegisterServerEvent('level_system:playerInteraction')
+AddEventHandler('level_system:playerInteraction', function(targetPlayerId)
+    local src = source
+    
+    if not playerStats[src] then return end
+    
+    if not playerStats[src].uniquePlayersSpokeWith[targetPlayerId] then
+        playerStats[src].uniquePlayersSpokeWith[targetPlayerId] = true
+        
+        local uniqueCount = 0
+        for _ in pairs(playerStats[src].uniquePlayersSpokeWith) do
+            uniqueCount = uniqueCount + 1
+        end
+        
+        -- Check social butterfly achievement
+        if uniqueCount >= 50 then
+            exports.level_system:UnlockAchievement(src, 'social_butterfly')
+        end
+    end
+end)
+```
+
+## Prestige System
+
+### Prestige Configuration
+```lua
+Config.Prestige = {
+    Enabled = true,
+    MaxPrestige = 5,
+    RequireMaxLevel = true,
+    ResetSkills = false,
+    KeepAchievements = true,
+    
+    Bonuses = {
+        [1] = {xp_multiplier = 1.1, skill_points = 5},
+        [2] = {xp_multiplier = 1.2, skill_points = 10},
+        [3] = {xp_multiplier = 1.3, skill_points = 15},
+        [4] = {xp_multiplier = 1.4, skill_points = 20},
+        [5] = {xp_multiplier = 1.5, skill_points = 25},
+    }
+}
+```
+
+### Prestige Implementation
+```lua
+-- Handle prestige
+RegisterServerEvent('level_system:prestige')
+AddEventHandler('level_system:prestige', function(category)
+    local src = source
+    local currentLevel = exports.level_system:GetLevel(src, category)
+    local maxLevel = Config.XPCategories[category].max_level
+    
+    if currentLevel >= maxLevel then
+        local currentPrestige = exports.level_system:GetPrestige(src, category)
+        
+        if currentPrestige < Config.Prestige.MaxPrestige then
+            -- Reset level and XP
+            exports.level_system:SetLevel(src, category, 1)
+            exports.level_system:SetXP(src, category, 0)
+            
+            -- Increase prestige
+            exports.level_system:SetPrestige(src, category, currentPrestige + 1)
+            
+            -- Give prestige bonuses
+            local bonuses = Config.Prestige.Bonuses[currentPrestige + 1]
+            if bonuses then
+                exports.level_system:GiveSkillPoints(src, bonuses.skill_points)
+            end
+            
+            TriggerClientEvent('level_system:prestigeComplete', src, category, currentPrestige + 1)
+        end
+    end
+end)
+```
+
+## Leaderboards
+
+### Leaderboard Types
+```lua
+Config.Leaderboards = {
+    ['total_level'] = {
+        name = 'Highest Total Level',
+        query = 'SELECT identifier, name, SUM(level) as total_level FROM player_levels GROUP BY identifier ORDER BY total_level DESC LIMIT 10'
+    },
+    
+    ['combat_level'] = {
+        name = 'Combat Masters',
+        query = 'SELECT identifier, name, level FROM player_levels WHERE category = "combat" ORDER BY level DESC LIMIT 10'
+    },
+    
+    ['achievements'] = {
+        name = 'Achievement Hunters',
+        query = 'SELECT identifier, name, COUNT(*) as achievement_count FROM player_achievements GROUP BY identifier ORDER BY achievement_count DESC LIMIT 10'
+    },
+}
+```
+
+## Usage Examples
+
+### Custom XP Source
+```lua
+-- Give XP for custom activities
+RegisterServerEvent('myserver:customActivity')
+AddEventHandler('myserver:customActivity', function(activityType)
+    local src = source
+    
+    if activityType == 'fishing' then
+        exports.level_system:GiveXP(src, 'legal', 25, 'Fishing')
+    elseif activityType == 'racing' then
+        exports.level_system:GiveXP(src, 'driving', 100, 'Street racing')
+    elseif activityType == 'helping_player' then
+        exports.level_system:GiveXP(src, 'social', 75, 'Helping another player')
+    end
+end)
+```
+
+### Level-Based Restrictions
+```lua
+-- Restrict access based on level
+RegisterServerEvent('weapons:requestWeapon')
+AddEventHandler('weapons:requestWeapon', function(weaponName)
+    local src = source
+    local combatLevel = exports.level_system:GetLevel(src, 'combat')
+    
+    local weaponRequirements = {
+        ['WEAPON_PISTOL'] = 5,
+        ['WEAPON_SMG'] = 15,
+        ['WEAPON_ASSAULTRIFLE'] = 25,
+        ['WEAPON_SNIPERRIFLE'] = 40,
+    }
+    
+    local requiredLevel = weaponRequirements[weaponName]
+    
+    if requiredLevel and combatLevel >= requiredLevel then
+        -- Give weapon
+        TriggerClientEvent('weapons:giveWeapon', src, weaponName)
+    else
+        TriggerClientEvent('chat:addMessage', src, {
+            color = {255, 0, 0},
+            multiline = true,
+            args = {"System", "You need combat level " .. requiredLevel .. " to use this weapon!"}
+        })
+    end
+end)
+```
+
+### Dynamic Pricing Based on Skills
+```lua
+-- Adjust prices based on skills
+RegisterServerEvent('shops:purchaseItem')
+AddEventHandler('shops:purchaseItem', function(itemName, basePrice)
+    local src = source
+    local finalPrice = basePrice
+    
+    -- Check for merchant skill (hypothetical skill)
+    local merchantRank = exports.level_system:GetSkillRank(src, 'merchant')
+    if merchantRank > 0 then
+        local discount = merchantRank * 5 -- 5% per rank
+        finalPrice = basePrice * (1 - discount / 100)
+    end
+    
+    -- Process purchase with adjusted price
+    ProcessItemPurchase(src, itemName, finalPrice)
+end)
+```
+
+## Performance Optimization
+
+### Database Optimization
+```lua
+-- Batch save player data
+CreateThread(function()
+    while true do
+        Wait(Config.SaveInterval * 1000)
+        
+        local playersToSave = {}
+        for _, playerId in ipairs(GetPlayers()) do
+            table.insert(playersToSave, playerId)
+        end
+        
+        if #playersToSave > 0 then
+            exports.level_system:BatchSavePlayerData(playersToSave)
+        end
+    end
+end)
+```
+
+### Memory Management
+```lua
+-- Clean up disconnected players
+AddEventHandler('playerDropped', function(reason)
+    local src = source
+    
+    -- Save final data
+    exports.level_system:SavePlayerData(src)
+    
+    -- Clean up memory
+    if playerStats[src] then
+        playerStats[src] = nil
+    end
+end)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### XP Not Saving
+- Check database connection
+- Verify auto-save is enabled
+- Check for SQL errors in console
+- Ensure proper permissions
+
+#### Skills Not Working
+- Verify skill configuration
+- Check event handlers are registered
+- Test skill effects manually
+- Check for conflicts with other scripts
+
+#### Performance Issues
+- Reduce save interval for high-traffic servers
+- Optimize XP tracking frequency
+- Use batch operations where possible
+- Monitor database query performance
+
+## Changelog
+
+### Version 1.5.0
+- Added prestige system
+- Enhanced achievement tracking
+- Improved skill tree interface
+- Performance optimizations
+
+### Version 1.4.0
+- Added leaderboards
+- Enhanced UI with animations
+- Improved database performance
+- Added more skill effects
+
+### Version 1.3.0
+- Added achievement system
+- Enhanced skill trees
+- Improved XP tracking
+- Added admin commands
+
+---
+
+**Status:** ✅ Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**Dependencies:** seba_core (required)  
+**License:** MIT

@@ -1,0 +1,345 @@
+# Seba NPC Dialogue
+
+**Seba NPC Dialogue** is an advanced NPC interaction system for FiveM that provides immersive dialogue trees, quest systems, and dynamic NPC behaviors for enhanced roleplay experiences.
+
+## Description
+
+Seba NPC Dialogue revolutionizes NPC interactions by offering branching dialogue trees, contextual responses, voice acting integration, and quest management. The system provides a comprehensive framework for creating engaging storylines and improving player immersion through sophisticated NPC interactions.
+
+## Features
+
+### Advanced Dialogue System
+- Branching dialogue trees with multiple outcomes
+- Contextual responses based on player status
+- Voice integration support for audio files
+- Rich text formatting and special effects
+
+### NPC Management
+- Dynamic spawning and despawning system
+- Custom behavior scripts and animations
+- Configurable interaction zones
+- Relationship system with player attitudes
+
+### Quest Integration
+- Link dialogues to quest progression
+- Conditional dialogues based on quest status
+- Integrated reward system
+- Progress tracking through dialogue interactions
+
+## Installation
+
+### Requirements
+- FiveM Server (Latest version)
+- Framework: ESX, QBCore, or Standalone
+- Dependencies: ox_lib (recommended)
+- Database: MySQL or MariaDB (optional)
+
+### Setup Process
+
+1. Download the latest version
+2. Extract to your resources folder
+3. Install dependencies (ox_lib)
+4. Configure settings in `config.lua`
+5. Import database tables (if using database storage)
+6. Add to server.cfg:
+   ```cfg
+   ensure seba_npcdialogue
+   ```
+
+## Configuration
+
+### Settings
+
+```lua
+Config = {
+    -- Framework detection
+    Framework = 'auto', -- auto, esx, qbcore, standalone
+    
+    -- Interaction settings
+    InteractionDistance = 2.0,
+    InteractionKey = 38, -- E key
+    
+    -- UI configuration
+    UITheme = 'modern',
+    ShowInteractionPrompt = true,
+    
+    -- Voice settings
+    EnableVoice = true,
+    VoiceVolume = 0.8,
+    
+    -- Performance settings
+    UpdateInterval = 100,
+    MaxActiveNPCs = 50,
+}
+```
+
+### NPC Configuration
+
+```lua
+Config.NPCs = {
+    ['shop_clerk'] = {
+        model = 'a_m_y_business_01',
+        coords = vector4(25.0, -1347.0, 29.5, 90.0),
+        scenario = 'WORLD_HUMAN_STAND_IMPATIENT',
+        interactions = {
+            distance = 2.5,
+            marker = true,
+            blip = true,
+        },
+        dialogue = 'shop_clerk_main',
+    },
+}
+```
+
+### Dialogue Trees
+
+```lua
+Config.Dialogues = {
+    ['shop_clerk_main'] = {
+        text = "Welcome to our shop! How can I help you today?",
+        voice = 'shop_clerk_welcome.ogg',
+        options = {
+            {
+                text = "I'd like to buy something",
+                action = 'open_shop',
+                condition = nil,
+                next = nil,
+            },
+            {
+                text = "Tell me about this place",
+                action = nil,
+                condition = nil,
+                next = 'shop_info',
+            },
+            {
+                text = "Nothing, thanks",
+                action = 'close_dialogue',
+                condition = nil,
+                next = nil,
+            },
+        },
+    },
+}
+```
+
+## Server Functions
+
+### NPC Management
+
+#### CreateNPC
+```lua
+exports.seba_npcdialogue:CreateNPC(id, data)
+```
+Creates a new NPC with specified configuration.
+
+**Parameters:**
+- `id` (string): Unique NPC identifier
+- `data` (table): NPC configuration data
+
+#### DeleteNPC
+```lua
+exports.seba_npcdialogue:DeleteNPC(id)
+```
+Removes an existing NPC from the world.
+
+**Parameters:**
+- `id` (string): NPC identifier to remove
+
+#### UpdateNPCDialogue
+```lua
+exports.seba_npcdialogue:UpdateNPCDialogue(id, dialogueId)
+```
+Updates the dialogue tree for a specific NPC.
+
+**Parameters:**
+- `id` (string): NPC identifier
+- `dialogueId` (string): New dialogue tree ID
+
+### Dialogue System
+
+#### StartDialogue
+```lua
+exports.seba_npcdialogue:StartDialogue(playerId, dialogueId, npcId)
+```
+Initiates a dialogue session with a player.
+
+**Parameters:**
+- `playerId` (number): Target player server ID
+- `dialogueId` (string): Dialogue tree to start
+- `npcId` (string): NPC initiating the dialogue
+
+#### AddDialogueOption
+```lua
+exports.seba_npcdialogue:AddDialogueOption(dialogueId, option)
+```
+Adds a new option to an existing dialogue tree.
+
+**Parameters:**
+- `dialogueId` (string): Target dialogue tree
+- `option` (table): Option configuration
+
+## Client Functions
+
+### Interaction System
+
+#### CanInteractWithNPC
+```lua
+local canInteract = exports.seba_npcdialogue:CanInteractWithNPC(npcId)
+```
+Checks if player can interact with specified NPC.
+
+**Returns:**
+- `canInteract` (boolean): Interaction availability
+
+#### GetNearestNPC
+```lua
+local nearestNPC = exports.seba_npcdialogue:GetNearestNPC()
+```
+Returns the nearest interactable NPC.
+
+**Returns:**
+- `nearestNPC` (table): NPC data or nil
+
+#### CloseDialogue
+```lua
+exports.seba_npcdialogue:CloseDialogue()
+```
+Force closes the current dialogue interface.
+
+## Events
+
+### Server Events
+
+#### seba_npcdialogue:npcInteraction
+Triggered when a player interacts with an NPC.
+
+```lua
+AddEventHandler('seba_npcdialogue:npcInteraction', function(playerId, npcId, action)
+    print(playerId .. ' interacted with ' .. npcId .. ' - Action: ' .. action)
+end)
+```
+
+#### seba_npcdialogue:dialogueCompleted
+Triggered when a dialogue session ends.
+
+```lua
+AddEventHandler('seba_npcdialogue:dialogueCompleted', function(playerId, dialogueId, result)
+    if result.action == 'start_quest' then
+        exports.quest_system:StartQuest(playerId, result.questId)
+    end
+end)
+```
+
+### Client Events
+
+#### seba_npcdialogue:dialogueStarted
+Triggered when dialogue interface opens.
+
+```lua
+AddEventHandler('seba_npcdialogue:dialogueStarted', function(npcId, dialogueId)
+    SendNUIMessage({
+        action = 'showDialogue',
+        data = dialogueData
+    })
+end)
+```
+
+#### seba_npcdialogue:dialogueEnded
+Triggered when dialogue interface closes.
+
+```lua
+AddEventHandler('seba_npcdialogue:dialogueEnded', function()
+    SendNUIMessage({action = 'hideDialogue'})
+end)
+```
+
+## Usage Examples
+
+### Basic NPC Setup
+
+```lua
+local shopNPC = {
+    model = 'a_m_y_business_02',
+    coords = vector4(373.9, 327.9, 103.6, 165.0),
+    scenario = 'WORLD_HUMAN_CLIPBOARD',
+    dialogue = 'electronics_shop',
+    blip = {
+        sprite = 521,
+        color = 2,
+        scale = 0.8,
+        name = 'Electronics Shop'
+    }
+}
+
+exports.seba_npcdialogue:CreateNPC('electronics_clerk', shopNPC)
+```
+
+### Dynamic Dialogue System
+
+```lua
+Config.Dialogues['quest_giver'] = {
+    text = function(playerId)
+        local questStatus = exports.quest_system:GetQuestStatus(playerId, 'main_story')
+        
+        if questStatus == 'not_started' then
+            return "I have an important task for you, are you interested?"
+        elseif questStatus == 'in_progress' then
+            return "How is the task going? Have you completed it yet?"
+        else
+            return "Thank you for completing the task! Here's your reward."
+        end
+    end,
+    
+    options = function(playerId)
+        local questStatus = exports.quest_system:GetQuestStatus(playerId, 'main_story')
+        local options = {}
+        
+        if questStatus == 'not_started' then
+            table.insert(options, {
+                text = "Yes, I'm interested",
+                action = 'start_quest:main_story',
+                next = 'quest_started'
+            })
+        elseif questStatus == 'in_progress' then
+            table.insert(options, {
+                text = "I've completed the task",
+                action = 'complete_quest:main_story',
+                next = 'quest_completed',
+                condition = function(playerId)
+                    return exports.quest_system:CanCompleteQuest(playerId, 'main_story')
+                end
+            })
+        end
+        
+        return options
+    end
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### NPCs Not Spawning
+- Verify model names are valid
+- Check coordinates are correct
+- Ensure resource dependencies are loaded
+- Check console for error messages
+
+#### Dialogues Not Working
+- Verify dialogue IDs match NPC configuration
+- Check for syntax errors in dialogue trees
+- Ensure all required options are present
+- Test dialogue conditions
+
+#### Performance Issues
+- Reduce number of active NPCs
+- Optimize dialogue conditions
+- Increase update intervals
+- Check for resource conflicts
+
+---
+
+**Status:** Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**License:** MIT

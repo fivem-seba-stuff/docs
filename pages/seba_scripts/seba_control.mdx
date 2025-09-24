@@ -1,0 +1,709 @@
+# Seba Control
+
+**Seba Control** is a comprehensive administrative control panel designed for FiveM server management, providing powerful tools for administrators and moderators.
+
+## Description
+
+Seba Control offers a centralized dashboard for server administration, featuring player management, resource control, server monitoring, and advanced administrative functions. Built with performance and security in mind for professional server environments.
+
+## Features
+
+### Administrative Tools
+- Complete player management system with ban, kick, teleport, and player administration
+- Advanced resource control for starting, stopping, and restarting server resources
+- Real-time server monitoring with performance metrics and statistics
+- Granular permission system with role-based access control
+
+### Dashboard Features
+- Real-time server statistics and performance monitoring
+- Comprehensive player analytics with online activity logs
+- Resource health monitoring and usage statistics
+- Automated alert system for critical server events
+
+### Management Options
+- Dynamic vehicle spawning and management system
+- Weather control system with real-time weather manipulation
+- Server time control and synchronization
+- Economy tools for money and item management
+
+## Installation
+
+### Requirements
+- FiveM Server (latest version recommended)
+- Compatible framework (ESX, QBCore, or Standalone)
+- MySQL or MariaDB database
+- Administrative access to server configuration
+
+### Setup Process
+
+1. Download the latest release from the repository
+2. Extract files to your server's resources folder
+3. Import the `database.sql` file into your database
+4. Configure database settings in `config.lua`
+5. Add to server.cfg:
+   ```cfg
+   ensure seba_control
+   ```
+6. Configure admin permissions for authorized users
+7. Restart your server
+
+## Configuration
+
+### Settings
+
+#### Basic Configuration
+```lua
+Config = {
+    -- Framework detection (auto-detect, esx, qbcore, standalone)
+    Framework = 'auto',
+    
+    -- Admin group definitions
+    AdminGroups = {'admin', 'superadmin', 'owner'},
+    
+    -- UI customization
+    UITheme = 'dark', -- dark, light
+    Language = 'en',
+    
+    -- Security settings
+    EnableLogging = true,
+    LogLevel = 'info', -- debug, info, warn, error
+}
+```
+
+#### Permission System
+```lua
+Config.Permissions = {
+    ['player_management'] = {'admin', 'moderator'},
+    ['vehicle_spawn'] = {'admin', 'helper'},
+    ['resource_control'] = {'admin', 'superadmin'},
+    ['server_control'] = {'superadmin', 'owner'},
+    ['economy_tools'] = {'admin'},
+}
+```
+
+#### Database Configuration
+```lua
+Config.Database = {
+    Host = 'localhost',
+    Port = 3306,
+    Username = 'root',
+    Password = 'password',
+    Database = 'fivem',
+    Charset = 'utf8mb4',
+}
+```
+
+## Commands
+
+### Administrative Commands
+
+#### Player Management Commands
+```
+/scontrol - Open Seba Control administrative panel
+/skick [id] [reason] - Kick a player from the server
+/sban [id] [duration] [reason] - Ban a player temporarily or permanently
+/sunban [identifier] - Unban a previously banned player
+/sgoto [id] - Teleport to a specific player
+/sbring [id] - Bring a player to your location
+```
+
+#### Server Control Commands
+```
+/srestart [resource] - Restart a specific server resource
+/sstop [resource] - Stop a running server resource
+/sstart [resource] - Start a stopped server resource
+/sannounce [message] - Send server-wide announcement
+/smaintenance - Toggle server maintenance mode
+```
+
+#### Utility Commands
+```
+/sspawn [vehicle] - Spawn a vehicle at your location
+/sweather [weather] - Change current weather condition
+/stime [hour] [minute] - Set server time
+/sheal - Heal your character to full health
+/sgodmode - Toggle invincibility mode
+```
+
+## Server Functions
+
+### Player Management
+
+#### GetPlayerInfo
+```lua
+local playerInfo = exports.seba_control:GetPlayerInfo(serverId)
+```
+Get comprehensive player information.
+
+**Parameters:**
+- `serverId` (number): Player's server ID
+
+**Returns:**
+- `playerInfo` (table): Player data including name, identifier, and status
+
+#### BanPlayer
+```lua
+exports.seba_control:BanPlayer(serverId, duration, reason, adminName)
+```
+Ban a player from the server.
+
+**Parameters:**
+- `serverId` (number): Player's server ID
+- `duration` (number): Ban duration in hours (0 = permanent)
+- `reason` (string): Reason for the ban
+- `adminName` (string): Admin performing the action
+
+#### KickPlayer
+```lua
+exports.seba_control:KickPlayer(serverId, reason, adminName)
+```
+Kick a player from the server.
+
+**Parameters:**
+- `serverId` (number): Player's server ID
+- `reason` (string): Reason for the kick
+- `adminName` (string): Admin performing the action
+
+### Permission System
+
+#### HasPermission
+```lua
+local hasPermission = exports.seba_control:HasPermission(serverId, 'player_management')
+```
+Check if a player has specific permission.
+
+**Parameters:**
+- `serverId` (number): Player's server ID
+- `permission` (string): Permission to check
+
+**Returns:**
+- `hasPermission` (boolean): Permission status
+
+#### GetPermissionLevel
+```lua
+local permLevel = exports.seba_control:GetPermissionLevel(serverId)
+```
+Get player's permission level.
+
+**Parameters:**
+- `serverId` (number): Player's server ID
+
+**Returns:**
+- `permLevel` (number): Permission level (0-10)
+
+### Server Management
+
+#### GetServerStats
+```lua
+local stats = exports.seba_control:GetServerStats()
+```
+Get comprehensive server statistics.
+
+**Returns:**
+- `stats` (table): Server performance and status data
+
+#### RestartResource
+```lua
+exports.seba_control:RestartResource(resourceName)
+```
+Restart a server resource.
+
+**Parameters:**
+- `resourceName` (string): Name of the resource to restart
+
+#### SendAnnouncement
+```lua
+exports.seba_control:SendAnnouncement(message, type)
+```
+Send server-wide announcement.
+
+**Parameters:**
+- `message` (string): Announcement message
+- `type` (string): Message type ('info', 'warning', 'success', 'error')
+
+## Client Functions
+
+### UI Control
+
+#### OpenPanel
+```lua
+exports.seba_control:OpenPanel()
+```
+Open the administrative control panel.
+
+#### ClosePanel
+```lua
+exports.seba_control:ClosePanel()
+```
+Close the administrative control panel.
+
+#### IsPanelOpen
+```lua
+local isOpen = exports.seba_control:IsPanelOpen()
+```
+Check if the control panel is currently open.
+
+**Returns:**
+- `isOpen` (boolean): Panel open status
+
+## Events
+
+### Server Events
+
+#### seba_control:playerBanned
+Triggered when a player is banned.
+
+```lua
+AddEventHandler('seba_control:playerBanned', function(playerData, adminData, reason)
+    print(playerData.name .. ' was banned by ' .. adminData.name .. ' for: ' .. reason)
+end)
+```
+
+#### seba_control:resourceRestarted
+Triggered when a resource is restarted.
+
+```lua
+AddEventHandler('seba_control:resourceRestarted', function(resourceName, adminId)
+    print(resourceName .. ' was restarted by admin ID: ' .. adminId)
+end)
+```
+
+#### seba_control:serverStatsUpdated
+Triggered when server statistics are updated.
+
+```lua
+AddEventHandler('seba_control:serverStatsUpdated', function(stats)
+    -- Handle updated server statistics
+    local playerCount = stats.playerCount
+    local uptime = stats.uptime
+end)
+```
+
+### Client Events
+
+#### seba_control:panelOpened
+Triggered when the control panel is opened.
+
+```lua
+AddEventHandler('seba_control:panelOpened', function()
+    -- Handle panel opening
+    print('Admin panel opened')
+end)
+```
+
+#### seba_control:announcementReceived
+Triggered when an announcement is received.
+
+```lua
+AddEventHandler('seba_control:announcementReceived', function(message, type)
+    -- Handle server announcement
+    ShowNotification(message, type)
+end)
+```
+
+## Usage Examples
+
+### Basic Administration Check
+
+```lua
+RegisterCommand('admin_spawn', function(source, args)
+    if exports.seba_control:HasPermission(source, 'vehicle_spawn') then
+        local vehicleHash = GetHashKey(args[1])
+        if IsModelValid(vehicleHash) then
+            -- Spawn vehicle logic here
+            local ped = GetPlayerPed(source)
+            local coords = GetEntityCoords(ped)
+            CreateVehicle(vehicleHash, coords, 0.0, true, false)
+        end
+    else
+        TriggerClientEvent('chat:addMessage', source, {
+            color = {255, 0, 0},
+            args = {"System", "Insufficient permissions for this command"}
+        })
+    end
+end)
+```
+
+### Custom Permission Integration
+
+```lua
+RegisterServerEvent('myresource:checkCustomPermission')
+AddEventHandler('myresource:checkCustomPermission', function(action)
+    local src = source
+    local permLevel = exports.seba_control:GetPermissionLevel(src)
+    
+    local requiredLevel = {
+        ['basic_action'] = 1,
+        ['admin_action'] = 3,
+        ['owner_action'] = 5
+    }
+    
+    if permLevel >= (requiredLevel[action] or 0) then
+        TriggerClientEvent('myresource:allowAction', src, action)
+    else
+        TriggerClientEvent('myresource:denyAction', src, action)
+    end
+end)
+```
+
+### Automated Server Monitoring
+
+```lua
+CreateThread(function()
+    while true do
+        local stats = exports.seba_control:GetServerStats()
+        
+        -- Check for high player count
+        if stats.playerCount > 50 then
+            exports.seba_control:SendAnnouncement(
+                'Server capacity is high. Please be patient with loading times.',
+                'info'
+            )
+        end
+        
+        -- Check for performance issues
+        if stats.memoryUsage > 80 then
+            exports.seba_control:SendAnnouncement(
+                'Server performance may be affected by high memory usage.',
+                'warning'
+            )
+        end
+        
+        Wait(300000) -- Check every 5 minutes
+    end
+end)
+```
+
+### Custom Logging Integration
+
+```lua
+AddEventHandler('seba_control:playerBanned', function(playerData, adminData, reason)
+    -- Log to external webhook or logging system
+    local logData = {
+        action = 'player_banned',
+        target = playerData.name,
+        admin = adminData.name,
+        reason = reason,
+        timestamp = os.time()
+    }
+    
+    -- Send to Discord webhook or logging service
+    sendToLogService(logData)
+end)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Control Panel Not Opening
+- Verify player has appropriate admin permissions
+- Check configuration for correct admin groups
+- Ensure resource is properly started and configured
+- Check browser console for JavaScript errors (F8)
+
+#### Database Connection Problems
+- Verify database credentials in configuration file
+- Ensure MySQL/MariaDB server is running and accessible
+- Check that database exists and SQL file was imported
+- Review server console for database error messages
+
+#### Permission System Issues
+- Confirm admin groups are correctly configured
+- Verify framework integration is working properly
+- Check database permissions table for user entries
+- Restart resource after making permission changes
+
+#### Performance and UI Issues
+- Clear browser cache and reload (Ctrl+F5)
+- Monitor server resource usage and performance
+- Check for conflicts with other admin resources
+- Verify HTML/CSS/JS files are intact and unmodified
+
+### Performance Optimization
+
+1. **Database Optimization**: Ensure proper indexing on frequently queried tables
+2. **Resource Management**: Monitor and limit concurrent panel users
+3. **Logging Configuration**: Adjust log levels to reduce system overhead
+4. **Cache Implementation**: Enable caching for frequently accessed data
+5. **Regular Maintenance**: Implement cleanup procedures for old logs and data
+
+---
+
+**Status:** Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**License:** MIT
+
+## Commands
+
+### Administrative Commands
+
+#### Player Management
+```
+/scontrol - Open Seba Control panel
+/skick [id] [reason] - Kick a player
+/sban [id] [duration] [reason] - Ban a player
+/sunban [identifier] - Unban a player
+/sgoto [id] - Teleport to player
+/sbring [id] - Bring player to you
+```
+
+#### Server Control
+```
+/srestart [resource] - Restart a resource
+/sstop [resource] - Stop a resource
+/sstart [resource] - Start a resource
+/sannounce [message] - Server-wide announcement
+/smaintenance - Toggle maintenance mode
+```
+
+#### Utility Commands
+```
+/sspawn [vehicle] - Spawn a vehicle
+/sweather [weather] - Change weather
+/stime [hour] [minute] - Set server time
+/sheal - Heal yourself
+/sgodmode - Toggle god mode
+```
+
+## API Reference
+
+### Server-Side Exports
+
+#### Player Management
+```lua
+-- Get player information
+local playerInfo = exports.seba_control:GetPlayerInfo(serverId)
+
+-- Ban a player
+exports.seba_control:BanPlayer(serverId, duration, reason, adminName)
+
+-- Kick a player
+exports.seba_control:KickPlayer(serverId, reason, adminName)
+```
+
+#### Permission System
+```lua
+-- Check if player has permission
+local hasPermission = exports.seba_control:HasPermission(serverId, 'player_management')
+
+-- Get player's permission level
+local permLevel = exports.seba_control:GetPermissionLevel(serverId)
+```
+
+#### Server Management
+```lua
+-- Get server statistics
+local stats = exports.seba_control:GetServerStats()
+
+-- Restart a resource
+exports.seba_control:RestartResource(resourceName)
+
+-- Send announcement
+exports.seba_control:SendAnnouncement(message, type)
+```
+
+### Client-Side Functions
+
+#### UI Control
+```lua
+-- Open control panel
+exports.seba_control:OpenPanel()
+
+-- Close control panel
+exports.seba_control:ClosePanel()
+
+-- Check if panel is open
+local isOpen = exports.seba_control:IsPanelOpen()
+```
+
+## Events
+
+### Server Events
+
+#### seba_control:playerBanned
+```lua
+AddEventHandler('seba_control:playerBanned', function(playerData, adminData, reason)
+    print(playerData.name .. ' was banned by ' .. adminData.name)
+end)
+```
+
+#### seba_control:resourceRestarted
+```lua
+AddEventHandler('seba_control:resourceRestarted', function(resourceName, adminId)
+    print(resourceName .. ' was restarted by admin')
+end)
+```
+
+### Client Events
+
+#### seba_control:panelOpened
+```lua
+AddEventHandler('seba_control:panelOpened', function()
+    -- Panel opened
+end)
+```
+
+#### seba_control:announcementReceived
+```lua
+AddEventHandler('seba_control:announcementReceived', function(message, type)
+    -- Handle announcement
+end)
+```
+
+## UI Features
+
+### Main Dashboard
+- **Server Overview**: Player count, uptime, performance
+- **Quick Actions**: Common administrative tasks
+- **Recent Activities**: Recent bans, kicks, and actions
+- **Resource Status**: Current resource health
+
+### Player Management Panel
+- **Player List**: All connected players with details
+- **Search & Filter**: Find players quickly
+- **Bulk Actions**: Manage multiple players at once
+- **Player Profiles**: Detailed player information
+
+### Resource Manager
+- **Resource List**: All server resources
+- **Status Monitoring**: Resource health and performance
+- **Quick Controls**: Start, stop, restart resources
+- **Dependency Tracking**: Resource dependency visualization
+
+### Server Control
+- **Performance Metrics**: CPU, RAM, network usage
+- **Console Output**: Real-time console monitoring
+- **Scheduled Tasks**: Automated server management
+- **Backup Management**: Server backup controls
+
+## Usage Examples
+
+### Basic Administration
+```lua
+-- Check if player is admin before allowing action
+RegisterCommand('admin_spawn', function(source, args)
+    if exports.seba_control:HasPermission(source, 'vehicle_spawn') then
+        local vehicleHash = GetHashKey(args[1])
+        -- Spawn vehicle logic
+    else
+        TriggerClientEvent('chat:addMessage', source, {
+            color = {255, 0, 0},
+            multiline = true,
+            args = {"System", "You don't have permission for this command"}
+        })
+    end
+end)
+```
+
+### Custom Permission Check
+```lua
+-- Add custom permission level
+RegisterServerEvent('myresource:checkCustomPermission')
+AddEventHandler('myresource:checkCustomPermission', function()
+    local src = source
+    local permLevel = exports.seba_control:GetPermissionLevel(src)
+    
+    if permLevel >= 3 then -- Admin level
+        -- Allow action
+        TriggerClientEvent('myresource:allowAction', src)
+    else
+        -- Deny action
+        TriggerClientEvent('myresource:denyAction', src)
+    end
+end)
+```
+
+### Automated Monitoring
+```lua
+CreateThread(function()
+    while true do
+        local stats = exports.seba_control:GetServerStats()
+        
+        if stats.playerCount > 50 then
+            exports.seba_control:SendAnnouncement(
+                'Server is getting busy! Please be patient.',
+                'info'
+            )
+        end
+        
+        Wait(300000) -- Check every 5 minutes
+    end
+end)
+```
+
+## Security Features
+
+### Access Control
+- **Permission-based system**: Granular access control
+- **Session management**: Secure admin sessions
+- **Action logging**: All administrative actions logged
+- **IP restrictions**: Optional IP-based restrictions
+
+### Anti-Abuse
+- **Rate limiting**: Prevents command spam
+- **Action confirmation**: Requires confirmation for critical actions
+- **Audit trails**: Complete audit trail of all actions
+- **Session timeouts**: Automatic session expiration
+
+## Troubleshooting
+
+### Common Issues
+
+#### Panel Won't Open
+- Check permissions in config
+- Verify player has admin rights
+- Check console for errors
+- Ensure resource is started
+
+#### Database Errors
+- Verify database connection
+- Check credentials in config
+- Ensure database exists
+- Import SQL file if missing tables
+
+#### Permission Issues
+- Check Config.AdminGroups
+- Verify framework integration
+- Check database permissions table
+- Restart resource after config changes
+
+### Performance Issues
+- Monitor server resources
+- Check database performance
+- Limit concurrent panel users
+- Optimize logging settings
+
+## Performance Optimization
+
+1. **Database Indexing**: Ensure proper database indexes
+2. **Cache Management**: Enable caching for frequently accessed data
+3. **Logging Levels**: Adjust logging to reduce overhead
+4. **Resource Limits**: Set appropriate resource limits
+5. **Regular Maintenance**: Clean up old logs and data
+
+## Changelog
+
+### Version 2.1.0
+- Added resource dependency tracking
+- Enhanced UI with dark/light themes
+- Improved performance monitoring
+- Added bulk player actions
+
+### Version 2.0.0
+- Complete UI redesign
+- Added real-time statistics
+- Enhanced permission system
+- Improved security features
+
+### Version 1.5.0
+- Added automated backup system
+- Enhanced logging capabilities
+- Improved database performance
+- Bug fixes and optimizations
+
+---
+
+**Status:** ✅ Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**License:** MIT

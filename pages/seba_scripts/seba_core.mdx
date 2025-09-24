@@ -1,0 +1,445 @@
+# Seba Core
+
+**Seba Core** is the foundational system that powers all Seba Scripts, providing essential frameworks, utilities, and services for FiveM server development and management.
+
+## Description
+
+Seba Core serves as the backbone for all Seba Scripts, offering a unified API, shared utilities, database management, and core services. It's designed to be lightweight yet powerful, providing essential functionality while maintaining optimal performance across all integrated scripts.
+
+## Features
+
+### Framework Foundation
+- Universal compatibility with ESX, QBCore, and Standalone configurations
+- Automatic framework detection and adaptation
+- Core services essential for all Seba Scripts
+- Modular design for loading only required components
+
+### Developer Tools
+- Unified API consistent across all Seba Scripts
+- Advanced event handling and communication system
+- Abstracted database operations layer
+- Comprehensive utility functions and helpers
+
+### Management Features
+- Resource monitoring and management capabilities
+- Centralized configuration management hub
+- Automatic update notifications and management
+- Performance metrics and tracking system
+
+## Installation
+
+### Requirements
+- FiveM Server (Latest version recommended)
+- Database: MySQL or MariaDB
+- Framework: ESX, QBCore, or Standalone
+- Lua Version: Lua 5.4+ recommended
+
+### Setup Process
+
+1. Download the latest version
+2. Extract to your resources folder
+3. Import `database.sql` to your database
+4. Configure `config.lua` file
+5. Add to server.cfg **before** other Seba Scripts:
+   ```cfg
+   ensure seba_core
+   ensure seba_control
+   ensure seba_vip
+   # ... other seba scripts
+   ```
+6. Restart your server
+
+## Configuration
+
+### Settings
+
+```lua
+Config = {
+    -- Core settings
+    Version = '2.0.0',
+    Debug = false,
+    Locale = 'en',
+    
+    -- Framework detection
+    Framework = 'auto', -- auto, esx, qbcore, standalone
+    FrameworkTimeout = 10000, -- ms
+    
+    -- Database settings
+    Database = {
+        Host = 'localhost',
+        Port = 3306,
+        Username = 'root',
+        Password = 'password',
+        Database = 'fivem',
+        Charset = 'utf8mb4',
+        Prefix = 'seba_',
+    },
+    
+    -- Performance settings
+    Performance = {
+        EnableCaching = true,
+        CacheTimeout = 300, -- seconds
+        MaxCacheSize = 1000,
+        OptimizeQueries = true,
+    },
+}
+```
+
+### Module Configuration
+
+```lua
+Config.Modules = {
+    ['database'] = true,
+    ['events'] = true,
+    ['utils'] = true,
+    ['cache'] = true,
+    ['logging'] = true,
+    ['updates'] = true,
+    ['metrics'] = false, -- Disabled by default
+}
+```
+
+### Logging Configuration
+
+```lua
+Config.Logging = {
+    Enabled = true,
+    Level = 'info', -- debug, info, warn, error
+    MaxFileSize = '10MB',
+    MaxFiles = 5,
+    LogToFile = true,
+    LogToConsole = true,
+    LogFormat = '[%timestamp%] [%level%] %message%',
+}
+```
+
+## Server Functions
+
+### Framework Detection
+
+#### GetFramework
+```lua
+local framework = exports.seba_core:GetFramework()
+```
+Returns the current framework being used.
+
+**Returns:**
+- `framework` (string): Framework name ('esx', 'qbcore', 'standalone')
+
+#### IsFrameworkReady
+```lua
+local isReady = exports.seba_core:IsFrameworkReady()
+```
+Checks if the framework is available and ready.
+
+**Returns:**
+- `isReady` (boolean): Framework readiness status
+
+#### GetFrameworkObject
+```lua
+local frameworkObj = exports.seba_core:GetFrameworkObject()
+```
+Returns the framework object for direct access.
+
+**Returns:**
+- `frameworkObj` (table): Framework object or nil
+
+### Player Management
+
+#### GetPlayer
+```lua
+local playerData = exports.seba_core:GetPlayer(playerId)
+```
+Gets universal player data across frameworks.
+
+**Parameters:**
+- `playerId` (number): Player server ID
+
+**Returns:**
+- `playerData` (table): Universal player data structure
+
+#### GetPlayerIdentifier
+```lua
+local identifier = exports.seba_core:GetPlayerIdentifier(playerId)
+```
+Gets the player's unique identifier.
+
+**Parameters:**
+- `playerId` (number): Player server ID
+
+**Returns:**
+- `identifier` (string): Player's unique identifier
+
+#### IsPlayerOnline
+```lua
+local isOnline = exports.seba_core:IsPlayerOnline(playerId)
+```
+Checks if a player is currently online.
+
+**Parameters:**
+- `playerId` (number): Player server ID
+
+**Returns:**
+- `isOnline` (boolean): Player online status
+
+### Database Functions
+
+#### ExecuteQuery
+```lua
+exports.seba_core:ExecuteQuery(query, params, callback)
+```
+Executes a database query with callback.
+
+**Parameters:**
+- `query` (string): SQL query string
+- `params` (table): Query parameters
+- `callback` (function): Callback function
+
+#### FetchQuery
+```lua
+local result = exports.seba_core:FetchQuery(query, params)
+```
+Executes a query and returns results synchronously.
+
+**Parameters:**
+- `query` (string): SQL query string
+- `params` (table): Query parameters
+
+**Returns:**
+- `result` (table): Query results
+
+#### Insert
+```lua
+exports.seba_core:Insert(table, data, callback)
+```
+Inserts data into specified table.
+
+**Parameters:**
+- `table` (string): Target table name
+- `data` (table): Data to insert
+- `callback` (function): Optional callback
+
+#### Update
+```lua
+exports.seba_core:Update(table, data, where, callback)
+```
+Updates data in specified table.
+
+**Parameters:**
+- `table` (string): Target table name
+- `data` (table): Data to update
+- `where` (table): Where conditions
+- `callback` (function): Optional callback
+
+### Cache System
+
+#### SetCache
+```lua
+exports.seba_core:SetCache(key, value, timeout)
+```
+Sets a value in the cache system.
+
+**Parameters:**
+- `key` (string): Cache key
+- `value` (any): Value to cache
+- `timeout` (number): Cache timeout in seconds
+
+#### GetCache
+```lua
+local value = exports.seba_core:GetCache(key)
+```
+Retrieves a value from cache.
+
+**Parameters:**
+- `key` (string): Cache key
+
+**Returns:**
+- `value` (any): Cached value or nil
+
+#### DeleteCache
+```lua
+exports.seba_core:DeleteCache(key)
+```
+Removes a specific cache entry.
+
+**Parameters:**
+- `key` (string): Cache key to remove
+
+## Client Functions
+
+### Core Access
+
+#### GetCoreObject
+```lua
+local core = exports.seba_core:GetCoreObject()
+```
+Gets the core object for advanced operations.
+
+**Returns:**
+- `core` (table): Core object or nil
+
+## Events
+
+### Server Events
+
+#### seba_core:initialized
+Triggered when Seba Core has been fully initialized.
+
+```lua
+AddEventHandler('seba_core:initialized', function()
+    print('Seba Core has been initialized')
+end)
+```
+
+#### seba_core:frameworkReady
+Triggered when framework detection is complete.
+
+```lua
+AddEventHandler('seba_core:frameworkReady', function(framework)
+    print('Framework detected: ' .. framework)
+end)
+```
+
+#### seba_core:playerLoaded
+Triggered when a player's data is loaded.
+
+```lua
+AddEventHandler('seba_core:playerLoaded', function(playerId, playerData)
+    print('Player loaded: ' .. playerData.name)
+end)
+```
+
+### Custom Events
+
+#### RegisterEvent
+```lua
+exports.seba_core:RegisterEvent('myevent', function(data)
+    print('Custom event triggered with data:', json.encode(data))
+end)
+```
+
+#### TriggerEvent
+```lua
+exports.seba_core:TriggerEvent('myevent', {message = 'Hello World'})
+```
+
+## Usage Examples
+
+### Basic Script Integration
+
+```lua
+-- server.lua of your script
+local SebaCore = nil
+
+-- Wait for core to initialize
+CreateThread(function()
+    while not SebaCore do
+        SebaCore = exports.seba_core:GetCoreObject()
+        if SebaCore then
+            print('Core loaded successfully')
+            InitializeScript()
+        else
+            print('Waiting for Seba Core...')
+            Wait(1000)
+        end
+    end
+end)
+
+function InitializeScript()
+    -- Your script initialization here
+    local playerData = SebaCore.GetPlayer(source)
+    
+    if playerData then
+        SebaCore.LogInfo('Player loaded: ' .. playerData.name)
+    end
+end
+```
+
+### Database Integration
+
+```lua
+-- Create a player service
+local PlayerService = {}
+
+function PlayerService:GetPlayer(playerId)
+    local identifier = exports.seba_core:GetPlayerIdentifier(playerId)
+    
+    return exports.seba_core:FetchQuery(
+        'SELECT * FROM players WHERE identifier = ?',
+        {identifier}
+    )
+end
+
+function PlayerService:SavePlayer(playerId, data)
+    local identifier = exports.seba_core:GetPlayerIdentifier(playerId)
+    
+    exports.seba_core:Update('players', data, {identifier = identifier}, function(affectedRows)
+        if affectedRows > 0 then
+            exports.seba_core:LogInfo('Player saved: ' .. identifier)
+        end
+    end)
+end
+```
+
+### Cache Implementation
+
+```lua
+-- Cache expensive operations
+function GetPlayerLevel(playerId)
+    local cacheKey = 'player_level_' .. playerId
+    local cached = exports.seba_core:GetCache(cacheKey)
+    
+    if cached then
+        return cached
+    end
+    
+    -- Expensive database operation
+    local level = CalculatePlayerLevel(playerId)
+    
+    -- Cache for 5 minutes
+    exports.seba_core:SetCache(cacheKey, level, 300)
+    
+    return level
+end
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Core Not Loading
+- Ensure seba_core starts before other Seba Scripts
+- Check database connection settings
+- Verify framework detection is working
+- Check console for error messages
+
+#### Performance Issues
+- Enable query optimization in config
+- Increase cache timeout for better performance
+- Monitor resource usage with built-in tools
+- Check for database query bottlenecks
+
+#### Database Errors
+- Verify database credentials
+- Ensure database exists and is accessible
+- Check for proper table permissions
+- Import SQL file if tables are missing
+
+### Debug Mode
+
+```lua
+Config.Debug = true
+```
+
+Enables:
+- Detailed console logging
+- Performance timing information
+- Database query logging
+- Error stack traces
+
+---
+
+**Status:** Active Development  
+**Compatibility:** ESX, QBCore, Standalone  
+**Priority:** Core System - Install First  
+**License:** MIT

@@ -1,0 +1,243 @@
+# Seba ClientLoader
+
+**Seba ClientLoader** is an efficient client-side resource loader designed to optimize resource loading and improve server performance for FiveM servers.
+
+## Description
+
+Seba ClientLoader provides intelligent client-side resource management, ensuring optimal loading times and seamless gameplay experience. It handles resource prioritization, loading optimization, and client synchronization with advanced caching and load balancing capabilities.
+
+## Features
+
+### Performance Optimization
+- Smart loading with resource prioritization
+- Optimized memory usage patterns
+- Reduced network bandwidth overhead
+- Load balancing across multiple frames
+
+### Configuration Options
+- Customizable resource priority levels
+- Intelligent caching system
+- Debug mode with detailed logging
+- Configurable loading timeouts
+
+### Developer Features
+- Easy API integration with other resources
+- Comprehensive event handling system
+- Promise-based loading callbacks
+- Robust error recovery system
+
+## Installation
+
+### Requirements
+- FiveM Server (latest recommended)
+- Framework compatibility with most frameworks
+- No additional dependencies (standalone)
+
+### Setup Process
+
+1. Download the latest version
+2. Extract to your resources folder
+3. Add to server.cfg:
+   ```cfg
+   ensure seba_clientloader
+   ```
+4. Configure settings in `config.lua`
+5. Restart your server
+
+## Configuration
+
+### Settings
+
+```lua
+Config = {
+    -- Enable debug mode
+    Debug = false,
+    
+    -- Loading timeout in milliseconds
+    LoadTimeout = 30000,
+    
+    -- Maximum concurrent loads
+    MaxConcurrentLoads = 5,
+    
+    -- Cache settings
+    EnableCache = true,
+    CacheExpiration = 3600, -- seconds
+}
+```
+
+### Priority Settings
+
+```lua
+Config.Priorities = {
+    ['essential'] = 1,    -- Critical resources
+    ['gameplay'] = 2,     -- Gameplay features
+    ['ui'] = 3,          -- User interface
+    ['optional'] = 4,     -- Optional enhancements
+}
+```
+
+## Client Functions
+
+### Resource Loading
+
+#### LoadResource
+```lua
+exports.seba_clientloader:LoadResource(resourceName, priority, callback)
+```
+Load a resource with specified priority.
+
+**Parameters:**
+- `resourceName` (string): Name of the resource to load
+- `priority` (number): Loading priority (1-4)
+- `callback` (function): Optional callback function
+
+**Example:**
+```lua
+exports.seba_clientloader:LoadResource('my_resource', 1, function(success)
+    if success then
+        print('Resource loaded successfully')
+    else
+        print('Failed to load resource')
+    end
+end)
+```
+
+#### IsResourceLoaded
+```lua
+local isLoaded = exports.seba_clientloader:IsResourceLoaded(resourceName)
+```
+Check if a resource is currently loaded.
+
+**Parameters:**
+- `resourceName` (string): Resource name to check
+
+**Returns:**
+- `isLoaded` (boolean): Loading status
+
+#### GetLoadingProgress
+```lua
+local progress = exports.seba_clientloader:GetLoadingProgress()
+```
+Get current loading progress percentage.
+
+**Returns:**
+- `progress` (number): Progress value (0-100)
+
+## Events
+
+### Client Events
+
+#### seba_clientloader:resourceLoaded
+Triggered when a resource finishes loading.
+
+```lua
+AddEventHandler('seba_clientloader:resourceLoaded', function(resourceName, success)
+    print(resourceName .. ' loading result: ' .. tostring(success))
+end)
+```
+
+#### seba_clientloader:allResourcesLoaded
+Triggered when all queued resources finish loading.
+
+```lua
+AddEventHandler('seba_clientloader:allResourcesLoaded', function()
+    print('All resources have been loaded')
+end)
+```
+
+## Usage Examples
+
+### Basic Resource Loading
+
+```lua
+-- Load essential resources first
+exports.seba_clientloader:LoadResource('seba_core', 1)
+exports.seba_clientloader:LoadResource('seba_ui', 2)
+
+-- Load optional resources
+exports.seba_clientloader:LoadResource('seba_extras', 4)
+```
+
+### Advanced Loading with Callbacks
+
+```lua
+local function loadGameplayResources()
+    local resources = {'seba_jobs', 'seba_shops', 'seba_vehicles'}
+    
+    for _, resource in ipairs(resources) do
+        exports.seba_clientloader:LoadResource(resource, 2, function(success)
+            if not success then
+                print('Warning: Failed to load ' .. resource)
+            end
+        end)
+    end
+end
+
+-- Wait for core systems before loading gameplay
+AddEventHandler('seba_clientloader:resourceLoaded', function(resourceName)
+    if resourceName == 'seba_core' then
+        loadGameplayResources()
+    end
+end)
+```
+
+### Progress Monitoring
+
+```lua
+CreateThread(function()
+    while true do
+        local progress = exports.seba_clientloader:GetLoadingProgress()
+        if progress < 100 then
+            -- Update loading screen
+            SendNUIMessage({
+                action = 'updateProgress',
+                progress = progress
+            })
+        else
+            break
+        end
+        Wait(100)
+    end
+end)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Resource Not Loading
+- Check resource name spelling
+- Verify resource exists and is started
+- Check console for error messages
+- Enable debug mode for detailed logs
+
+#### Slow Loading Performance
+- Reduce MaxConcurrentLoads in config
+- Check server performance
+- Verify network connectivity
+- Clear client cache
+
+#### Memory Issues
+- Monitor resource usage
+- Adjust cache settings
+- Check for memory leaks in other resources
+
+### Debug Mode
+
+Enable debug mode in config to see detailed loading information:
+
+```lua
+Config.Debug = true
+```
+
+This will output:
+- Loading start/end times
+- Success/failure status
+- Error messages
+- Performance metrics
+
+---
+
+**Status:** Active Development  
+**Compatibility:** FiveM Latest  
+**License:** MIT

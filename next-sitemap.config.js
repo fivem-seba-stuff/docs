@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://fivem-seba-stuff.github.io/docs',
+  siteUrl: 'https://fivem-seba-stuff.github.io/docs',
   generateRobotsTxt: true,
   generateIndexSitemap: false,
   outDir: './out',
@@ -16,7 +16,7 @@ module.exports = {
       },
     ],
     additionalSitemaps: [
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://fivem-seba-stuff.github.io/docs'}/sitemap.xml`,
+      'https://fivem-seba-stuff.github.io/docs/sitemap.xml',
     ],
   },
 };
