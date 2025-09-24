@@ -1,709 +1,554 @@
-# Seba Control
+# seba_control
 
-**Seba Control** is a comprehensive administrative control panel designed for FiveM server management, providing powerful tools for administrators and moderators.
+> Integration resource to synchronize credits, balances, and overall FiveM server status with a dedicated backend.
 
 ## Description
 
-Seba Control offers a centralized dashboard for server administration, featuring player management, resource control, server monitoring, and advanced administrative functions. Built with performance and security in mind for professional server environments.
+`seba_control` connects your server to a custom API that manages credits, keeps the backend informed about the server status, and coordinates administrative flows such as scheduled restarts. It includes bypass tooling for development, balance caching, and safeguards against duplicate transactions.
 
-## Features
+## Key features
 
-### Administrative Tools
-- Complete player management system with ban, kick, teleport, and player administration
-- Advanced resource control for starting, stopping, and restarting server resources
-- Real-time server monitoring with performance metrics and statistics
-- Granular permission system with role-based access control
-
-### Dashboard Features
-- Real-time server statistics and performance monitoring
-- Comprehensive player analytics with online activity logs
-- Resource health monitoring and usage statistics
-- Automated alert system for critical server events
-
-### Management Options
-- Dynamic vehicle spawning and management system
-- Weather control system with real-time weather manipulation
-- Server time control and synchronization
-- Economy tools for money and item management
+- **Backend API integration** — Endpoints for credit operations and server status reporting.
+- **Bypass mode** — Mock responses for local development and testing.
+- **Balance caching** — Avoids redundant requests and improves response times.
+- **Transaction management** — Locks to prevent duplicated operations.
+- **txAdmin events** — Handles scheduled restarts and related notifications.
+- **Economy validation** — Configurable minimums, maximums, and daily limits.
+- **Discord identification** — Automatically resolves player Discord IDs.
 
 ## Installation
 
-### Requirements
-- FiveM Server (latest version recommended)
-- Compatible framework (ESX, QBCore, or Standalone)
-- MySQL or MariaDB database
-- Administrative access to server configuration
-
-### Setup Process
-
-1. Download the latest release from the repository
-2. Extract files to your server's resources folder
-3. Import the `database.sql` file into your database
-4. Configure database settings in `config.lua`
-5. Add to server.cfg:
-   ```cfg
-   ensure seba_control
-   ```
-6. Configure admin permissions for authorized users
-7. Restart your server
+1. Copy the `seba_control` folder into `resources/`.
+2. Add `ensure seba_control` to your `server.cfg`.
+3. Configure the ConVars described below.
+4. Restart the server.
 
 ## Configuration
 
-### Settings
+### Required ConVars (server.cfg)
 
-#### Basic Configuration
-```lua
-Config = {
-    -- Framework detection (auto-detect, esx, qbcore, standalone)
-    Framework = 'auto',
-    
-    -- Admin group definitions
-    AdminGroups = {'admin', 'superadmin', 'owner'},
-    
-    -- UI customization
-    UITheme = 'dark', -- dark, light
-    Language = 'en',
-    
-    -- Security settings
-    EnableLogging = true,
-    LogLevel = 'info', -- debug, info, warn, error
-}
+```cfg
+# API Configuration
+setr FIVEM_SECRET "your_secret_here"
+setr API_BASE_URL "https://your-backend.com/api/fivem"
+setr SERVER_ID 1
+
+# Optional API Overrides
+setr CREDIT_API_BASE_URL "https://your-backend.com/api/fivem"
+setr SERVERS_API_BASE_URL "https://your-backend.com/api/servers"
+
+# Economy Limits
+setr SEBA_MIN_AMOUNT 1
+setr SEBA_MAX_AMOUNT 1000000
+setr SEBA_DAILY_ADD_LIMIT 0
+
+# Bypass Mode (for development/testing)
+setr API_BYPASS 0  # Set to 1 to enable mock data mode
+
+# Optional Server Info
+setr NEXT_RESTART_INIT ""
+setr WIPE_DAYS_INIT 30
 ```
 
-#### Permission System
-```lua
-Config.Permissions = {
-    ['player_management'] = {'admin', 'moderator'},
-    ['vehicle_spawn'] = {'admin', 'helper'},
-    ['resource_control'] = {'admin', 'superadmin'},
-    ['server_control'] = {'superadmin', 'owner'},
-    ['economy_tools'] = {'admin'},
-}
+- **FIVEM_SECRET** must match the secret configured on your backend.
+- Keep `API_BASE_URL` as the default unless credit and server endpoints are split.
+- Adjust `SEBA_MIN_AMOUNT`, `SEBA_MAX_AMOUNT`, and `SEBA_DAILY_ADD_LIMIT` to match your economy rules.
+- Enable `API_BYPASS` in development when you want mock data without live HTTP calls.
+
+## Bypass mode
+
+### Activation
+
+```cfg
+setr API_BYPASS 1
 ```
 
-#### Database Configuration
-```lua
-Config.Database = {
-    Host = 'localhost',
-    Port = 3306,
-    Username = 'root',
-    Password = 'password',
-    Database = 'fivem',
-    Charset = 'utf8mb4',
-}
-```
+### Behavior
 
-## Commands
+- All exports return successful mock responses.
+- `getBalance()` returns 1000 credits by default.
+- No outbound HTTP requests are executed.
+- Additional debug messages are printed in the server console.
 
-### Administrative Commands
+## Export API
 
-#### Player Management Commands
-```
-/scontrol - Open Seba Control administrative panel
-/skick [id] [reason] - Kick a player from the server
-/sban [id] [duration] [reason] - Ban a player temporarily or permanently
-/sunban [identifier] - Unban a previously banned player
-/sgoto [id] - Teleport to a specific player
-/sbring [id] - Bring a player to your location
-```
+<Tabs items={["Server", "Client"]}>
+<Tab>
 
-#### Server Control Commands
-```
-/srestart [resource] - Restart a specific server resource
-/sstop [resource] - Stop a running server resource
-/sstart [resource] - Start a stopped server resource
-/sannounce [message] - Send server-wide announcement
-/smaintenance - Toggle server maintenance mode
-```
+#### Credit management
 
-#### Utility Commands
-```
-/sspawn [vehicle] - Spawn a vehicle at your location
-/sweather [weather] - Change current weather condition
-/stime [hour] [minute] - Set server time
-/sheal - Heal your character to full health
-/sgodmode - Toggle invincibility mode
-```
+##### `spendCredits(playerId, amount, serverName?, description?)`
+**Signature:** `exports.seba_control:spendCredits(playerId, amount, serverName, description)`
 
-## Server Functions
+- **Description:** Deducts credits from a player using their `source` or Discord ID.
+- **Parameters:**
+  - `playerId` (`number|string`) – Player source or Discord ID.
+  - `amount` (`number`) – Credits to deduct.
+  - `serverName` (`string`, optional) – Server tag to report to the backend.
+  - `description` (`string`, optional) – Free-text description of the transaction.
+- **Returns:** `boolean success, string message`.
 
-### Player Management
+##### `addCredits(discordId, amount, serverName, description)`
+**Signature:** `exports.seba_control:addCredits(discordId, amount, serverName, description)`
 
-#### GetPlayerInfo
-```lua
-local playerInfo = exports.seba_control:GetPlayerInfo(serverId)
-```
-Get comprehensive player information.
+- **Description:** Adds credits to a user identified by Discord ID.
+- **Parameters:**
+  - `discordId` (`string`)
+  - `amount` (`number`)
+  - `serverName` (`string`)
+  - `description` (`string`)
+- **Returns:** `boolean success, string message`.
 
-**Parameters:**
-- `serverId` (number): Player's server ID
+##### `getBalance(discordId)`
+**Signature:** `exports.seba_control:getBalance(discordId)`
 
-**Returns:**
-- `playerInfo` (table): Player data including name, identifier, and status
+- **Description:** Fetches the current balance directly from the API.
+- **Returns:** `boolean success, number balance`.
 
-#### BanPlayer
-```lua
-exports.seba_control:BanPlayer(serverId, duration, reason, adminName)
-```
-Ban a player from the server.
+##### `getCachedBalance(discordId)`
+**Signature:** `exports.seba_control:getCachedBalance(discordId)`
 
-**Parameters:**
-- `serverId` (number): Player's server ID
-- `duration` (number): Ban duration in hours (0 = permanent)
-- `reason` (string): Reason for the ban
-- `adminName` (string): Admin performing the action
+- **Description:** Retrieves the cached balance to avoid frequent API calls.
+- **Returns:** `boolean success, number balance`.
 
-#### KickPlayer
-```lua
-exports.seba_control:KickPlayer(serverId, reason, adminName)
-```
-Kick a player from the server.
+#### Server management
 
-**Parameters:**
-- `serverId` (number): Player's server ID
-- `reason` (string): Reason for the kick
-- `adminName` (string): Admin performing the action
+##### `updateServerStatus()`
+**Signature:** `exports.seba_control:updateServerStatus()`
 
-### Permission System
+- **Description:** Synchronizes the current server status with the backend.
+- **Returns:** `boolean success, string message`.
 
-#### HasPermission
-```lua
-local hasPermission = exports.seba_control:HasPermission(serverId, 'player_management')
-```
-Check if a player has specific permission.
+##### `refreshServerCard(serverId?, force?)`
+**Signature:** `exports.seba_control:refreshServerCard(serverId, force)`
 
-**Parameters:**
-- `serverId` (number): Player's server ID
-- `permission` (string): Permission to check
+- **Description:** Refreshes the server card shown on external panels.
+- **Parameters:**
+  - `serverId` (`number`, optional) – Server identifier to refresh.
+  - `force` (`boolean`, optional) – Skip cache and force an update.
+- **Returns:** `boolean success, string message`.
 
-**Returns:**
-- `hasPermission` (boolean): Permission status
+##### `getServerPlayers(serverId)`
+**Signature:** `exports.seba_control:getServerPlayers(serverId)`
 
-#### GetPermissionLevel
-```lua
-local permLevel = exports.seba_control:GetPermissionLevel(serverId)
-```
-Get player's permission level.
+- **Description:** Fetches player information for a given server.
+- **Returns:** `boolean success, table serverInfo`.
 
-**Parameters:**
-- `serverId` (number): Player's server ID
+#### Utilities
 
-**Returns:**
-- `permLevel` (number): Permission level (0-10)
+##### `testAPIConnection()`
+**Signature:** `exports.seba_control:testAPIConnection()`
 
-### Server Management
+- **Description:** Verifies that the backend is reachable.
+- **Returns:** `boolean connected`.
 
-#### GetServerStats
-```lua
-local stats = exports.seba_control:GetServerStats()
-```
-Get comprehensive server statistics.
+##### `invalidateBalanceCache(discordId)`
+**Signature:** `exports.seba_control:invalidateBalanceCache(discordId)`
 
-**Returns:**
-- `stats` (table): Server performance and status data
+- **Description:** Removes the cached balance entry so the next call re-fetches data.
+- **Returns:** `nil`.
 
-#### RestartResource
-```lua
-exports.seba_control:RestartResource(resourceName)
-```
-Restart a server resource.
+##### `seba_identifier(source, "discord")`
+**Signature:** `exports.seba_control:seba_identifier(source, identifierType)`
 
-**Parameters:**
-- `resourceName` (string): Name of the resource to restart
+- **Description:** Helper that resolves identifiers; the most common usage is `"discord"`.
+- **Returns:** `string identifier|nil`.
 
-#### SendAnnouncement
-```lua
-exports.seba_control:SendAnnouncement(message, type)
-```
-Send server-wide announcement.
+</Tab>
+<Tab>
 
-**Parameters:**
-- `message` (string): Announcement message
-- `type` (string): Message type ('info', 'warning', 'success', 'error')
+The resource does not expose native client-side exports. To build UI integrations:
 
-## Client Functions
+- Request data with `TriggerServerEvent` and handle responses with `TriggerClientEvent`.
+- Reuse emitted events (see the Events tab) to show notifications or refresh HUD elements.
+- If you need the Discord ID on the client, request it from the server via `exports.seba_control:seba_identifier` and forward the result.
 
-### UI Control
-
-#### OpenPanel
-```lua
-exports.seba_control:OpenPanel()
-```
-Open the administrative control panel.
-
-#### ClosePanel
-```lua
-exports.seba_control:ClosePanel()
-```
-Close the administrative control panel.
-
-#### IsPanelOpen
-```lua
-local isOpen = exports.seba_control:IsPanelOpen()
-```
-Check if the control panel is currently open.
-
-**Returns:**
-- `isOpen` (boolean): Panel open status
+</Tab>
+</Tabs>
 
 ## Events
 
-### Server Events
+<Tabs items={["Server", "Client"]}>
+<Tab>
 
-#### seba_control:playerBanned
-Triggered when a player is banned.
+##### `seba_control:txadmin:scheduledRestart`
+Fires when txAdmin schedules a restart.
+
+- **Payload:** `{ timestamp: number, initiatedBy: string, reason?: string }`
+- **Typical usage:** Notify players or persist the restart plan.
 
 ```lua
-AddEventHandler('seba_control:playerBanned', function(playerData, adminData, reason)
-    print(playerData.name .. ' was banned by ' .. adminData.name .. ' for: ' .. reason)
+AddEventHandler('seba_control:txadmin:scheduledRestart', function(data)
+    print(('Restart scheduled by %s for %s'):format(data.initiatedBy, os.date('%H:%M', data.timestamp)))
 end)
 ```
 
-#### seba_control:resourceRestarted
-Triggered when a resource is restarted.
+##### `seba_control:txadmin:restartCancelled`
+Emitted when a scheduled restart is cancelled.
+
+- **Payload:** `{ cancelledBy: string }`
+
+##### `seba_control:balance:cacheInvalidated`
+Dispatched after `invalidateBalanceCache` is called.
+
+- **Payload:** `{ discordId: string }`
+- **Use case:** Refresh HUDs or immediately re-query the API.
+
+##### `seba_control:api:statusSynced`
+Indicates that `updateServerStatus` completed.
+
+- **Payload:** `{ success: boolean, message: string }`
+
+</Tab>
+<Tab>
+
+##### `seba_control:client:notification`
+Broadcasts status messages when credit operations run.
+
+- **Payload:** `{ type: 'success'|'error'|'info', message: string }`
+
+##### `seba_control:client:balanceUpdated`
+Sent when the server publishes a new balance to the player.
+
+- **Payload:** `{ balance: number }`
+
+##### `seba_control:client:bypassState`
+Informs the client when bypass mode toggles.
+
+- **Payload:** `{ enabled: boolean }`
 
 ```lua
-AddEventHandler('seba_control:resourceRestarted', function(resourceName, adminId)
-    print(resourceName .. ' was restarted by admin ID: ' .. adminId)
+AddEventHandler('seba_control:client:balanceUpdated', function(data)
+    print(('Your new balance is: %s credits'):format(data.balance))
 end)
 ```
 
-#### seba_control:serverStatsUpdated
-Triggered when server statistics are updated.
+</Tab>
+</Tabs>
+
+## Use cases
+
+### 1. Shop system
 
 ```lua
-AddEventHandler('seba_control:serverStatsUpdated', function(stats)
-    -- Handle updated server statistics
-    local playerCount = stats.playerCount
-    local uptime = stats.uptime
-end)
+local function buyItem(source, itemId, price)
+    local success, message = exports.seba_control:spendCredits(source, price, "Store", "Purchase of " .. itemId)
+
+    if success then
+        givePlayerItem(source, itemId)
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[STORE]", "You bought " .. itemId .. " for " .. price .. " credits"}
+        })
+    else
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", message}
+        })
+    end
+end
+
+RegisterCommand("buy", function(source, args)
+    if #args < 2 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[USAGE]", "/buy <item> <price>"}
+        })
+        return
+    end
+
+    local itemId = args[1]
+    local price = tonumber(args[2])
+
+    if not price or price <= 0 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Invalid price"}
+        })
+        return
+    end
+
+    buyItem(source, itemId, price)
+end, false)
 ```
 
-### Client Events
-
-#### seba_control:panelOpened
-Triggered when the control panel is opened.
+### 2. Daily reward system
 
 ```lua
-AddEventHandler('seba_control:panelOpened', function()
-    -- Handle panel opening
-    print('Admin panel opened')
-end)
+local dailyRewards = {}
+
+local function claimDailyReward(source)
+    local discordId = exports.seba_control:seba_identifier(source, "discord")
+
+    if not discordId then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Unable to resolve your Discord ID"}
+        })
+        return
+    end
+
+    local today = os.date("%Y-%m-%d")
+
+    if dailyRewards[discordId] == today then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[REWARD]", "You already claimed today's reward"}
+        })
+        return
+    end
+
+    local rewardAmount = 100
+    local success, message = exports.seba_control:addCredits(discordId, rewardAmount, "Reward System", "Daily reward")
+
+    if success then
+        dailyRewards[discordId] = today
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[REWARD]", "You received " .. rewardAmount .. " credits for today's reward"}
+        })
+    else
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Failed to grant reward: " .. message}
+        })
+    end
+end
+
+RegisterCommand("daily", function(source)
+    claimDailyReward(source)
+end, false)
 ```
 
-#### seba_control:announcementReceived
-Triggered when an announcement is received.
+### 3. Balance and transfer system
 
 ```lua
-AddEventHandler('seba_control:announcementReceived', function(message, type)
-    -- Handle server announcement
-    ShowNotification(message, type)
-end)
-```
+RegisterCommand("balance", function(source)
+    local discordId = exports.seba_control:seba_identifier(source, "discord")
 
-## Usage Examples
+    if not discordId then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Unable to resolve your Discord ID"}
+        })
+        return
+    end
 
-### Basic Administration Check
+    local success, balance = exports.seba_control:getCachedBalance(discordId)
 
-```lua
-RegisterCommand('admin_spawn', function(source, args)
-    if exports.seba_control:HasPermission(source, 'vehicle_spawn') then
-        local vehicleHash = GetHashKey(args[1])
-        if IsModelValid(vehicleHash) then
-            -- Spawn vehicle logic here
-            local ped = GetPlayerPed(source)
-            local coords = GetEntityCoords(ped)
-            CreateVehicle(vehicleHash, coords, 0.0, true, false)
+    if success then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[BALANCE]", "Your current balance is: " .. balance .. " credits"}
+        })
+    else
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Unable to retrieve your balance: " .. balance}
+        })
+    end
+end, false)
+
+RegisterCommand("transfer", function(source, args)
+    if #args < 2 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[USAGE]", "/transfer <player_id> <amount>"}
+        })
+        return
+    end
+
+    local targetId = tonumber(args[1])
+    local amount = tonumber(args[2])
+
+    if not targetId or not GetPlayerName(targetId) then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Player not found"}
+        })
+        return
+    end
+
+    if not amount or amount <= 0 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Invalid amount"}
+        })
+        return
+    end
+
+    local success1, message1 = exports.seba_control:spendCredits(source, amount, "Transfer", "Transfer to player " .. targetId)
+
+    if success1 then
+        local targetDiscord = exports.seba_control:seba_identifier(targetId, "discord")
+        if targetDiscord then
+            local success2, message2 = exports.seba_control:addCredits(targetDiscord, amount, "Transfer", "Transfer from player " .. source)
+
+            if success2 then
+                TriggerClientEvent('chat:addMessage', source, {
+                    args = {"[TRANSFER]", "You transferred " .. amount .. " credits"}
+                })
+                TriggerClientEvent('chat:addMessage', targetId, {
+                    args = {"[TRANSFER]", "You received " .. amount .. " credits from " .. GetPlayerName(source)}
+                })
+            else
+                TriggerClientEvent('chat:addMessage', source, {
+                    args = {"[ERROR]", "Transfer failed, contact an administrator"}
+                })
+            end
         end
     else
         TriggerClientEvent('chat:addMessage', source, {
-            color = {255, 0, 0},
-            args = {"System", "Insufficient permissions for this command"}
+            args = {"[ERROR]", message1}
         })
     end
-end)
+end, false)
 ```
 
-### Custom Permission Integration
+### 4. Administration system
 
 ```lua
-RegisterServerEvent('myresource:checkCustomPermission')
-AddEventHandler('myresource:checkCustomPermission', function(action)
-    local src = source
-    local permLevel = exports.seba_control:GetPermissionLevel(src)
-    
-    local requiredLevel = {
-        ['basic_action'] = 1,
-        ['admin_action'] = 3,
-        ['owner_action'] = 5
-    }
-    
-    if permLevel >= (requiredLevel[action] or 0) then
-        TriggerClientEvent('myresource:allowAction', src, action)
-    else
-        TriggerClientEvent('myresource:denyAction', src, action)
+RegisterCommand("addcredits", function(source, args)
+    if not IsPlayerAceAllowed(source, "seba_control.admin") then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Insufficient permissions"}
+        })
+        return
     end
-end)
-```
 
-### Automated Server Monitoring
-
-```lua
-CreateThread(function()
-    while true do
-        local stats = exports.seba_control:GetServerStats()
-        
-        -- Check for high player count
-        if stats.playerCount > 50 then
-            exports.seba_control:SendAnnouncement(
-                'Server capacity is high. Please be patient with loading times.',
-                'info'
-            )
-        end
-        
-        -- Check for performance issues
-        if stats.memoryUsage > 80 then
-            exports.seba_control:SendAnnouncement(
-                'Server performance may be affected by high memory usage.',
-                'warning'
-            )
-        end
-        
-        Wait(300000) -- Check every 5 minutes
+    if #args < 2 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[USAGE]", "/addcredits <player_id> <amount>"}
+        })
+        return
     end
-end)
-```
 
-### Custom Logging Integration
+    local targetId = tonumber(args[1])
+    local amount = tonumber(args[2])
 
-```lua
-AddEventHandler('seba_control:playerBanned', function(playerData, adminData, reason)
-    -- Log to external webhook or logging system
-    local logData = {
-        action = 'player_banned',
-        target = playerData.name,
-        admin = adminData.name,
-        reason = reason,
-        timestamp = os.time()
-    }
-    
-    -- Send to Discord webhook or logging service
-    sendToLogService(logData)
-end)
-```
+    if not targetId or not GetPlayerName(targetId) then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Player not found"}
+        })
+        return
+    end
 
-## Troubleshooting
+    local targetDiscord = exports.seba_control:seba_identifier(targetId, "discord")
+    if not targetDiscord then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ERROR]", "Unable to resolve the player's Discord ID"}
+        })
+        return
+    end
 
-### Common Issues
+    local success, message = exports.seba_control:addCredits(targetDiscord, amount, "Administration", "Credits granted by admin " .. GetPlayerName(source))
 
-#### Control Panel Not Opening
-- Verify player has appropriate admin permissions
-- Check configuration for correct admin groups
-- Ensure resource is properly started and configured
-- Check browser console for JavaScript errors (F8)
+    if success then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[ADMIN]", "You granted " .. amount .. " credits to " .. GetPlayerName(targetId)}
+        })
+        TriggerClientEvent('chat:addMessage', targetId, {
+            args = {"[ADMIN]", "You received " .. amount .. " credits from the administrator"}
+        })
 
-#### Database Connection Problems
-- Verify database credentials in configuration file
-- Ensure MySQL/MariaDB server is running and accessible
-- Check that database exists and SQL file was imported
-- Review server console for database error messages
-
-#### Permission System Issues
-- Confirm admin groups are correctly configured
-- Verify framework integration is working properly
-- Check database permissions table for user entries
-- Restart resource after making permission changes
-
-#### Performance and UI Issues
-- Clear browser cache and reload (Ctrl+F5)
-- Monitor server resource usage and performance
-- Check for conflicts with other admin resources
-- Verify HTML/CSS/JS files are intact and unmodified
-
-### Performance Optimization
-
-1. **Database Optimization**: Ensure proper indexing on frequently queried tables
-2. **Resource Management**: Monitor and limit concurrent panel users
-3. **Logging Configuration**: Adjust log levels to reduce system overhead
-4. **Cache Implementation**: Enable caching for frequently accessed data
-5. **Regular Maintenance**: Implement cleanup procedures for old logs and data
-
----
-
-**Status:** Active Development  
-**Compatibility:** ESX, QBCore, Standalone  
-**License:** MIT
-
-## Commands
-
-### Administrative Commands
-
-#### Player Management
-```
-/scontrol - Open Seba Control panel
-/skick [id] [reason] - Kick a player
-/sban [id] [duration] [reason] - Ban a player
-/sunban [identifier] - Unban a player
-/sgoto [id] - Teleport to player
-/sbring [id] - Bring player to you
-```
-
-#### Server Control
-```
-/srestart [resource] - Restart a resource
-/sstop [resource] - Stop a resource
-/sstart [resource] - Start a resource
-/sannounce [message] - Server-wide announcement
-/smaintenance - Toggle maintenance mode
-```
-
-#### Utility Commands
-```
-/sspawn [vehicle] - Spawn a vehicle
-/sweather [weather] - Change weather
-/stime [hour] [minute] - Set server time
-/sheal - Heal yourself
-/sgodmode - Toggle god mode
-```
-
-## API Reference
-
-### Server-Side Exports
-
-#### Player Management
-```lua
--- Get player information
-local playerInfo = exports.seba_control:GetPlayerInfo(serverId)
-
--- Ban a player
-exports.seba_control:BanPlayer(serverId, duration, reason, adminName)
-
--- Kick a player
-exports.seba_control:KickPlayer(serverId, reason, adminName)
-```
-
-#### Permission System
-```lua
--- Check if player has permission
-local hasPermission = exports.seba_control:HasPermission(serverId, 'player_management')
-
--- Get player's permission level
-local permLevel = exports.seba_control:GetPermissionLevel(serverId)
-```
-
-#### Server Management
-```lua
--- Get server statistics
-local stats = exports.seba_control:GetServerStats()
-
--- Restart a resource
-exports.seba_control:RestartResource(resourceName)
-
--- Send announcement
-exports.seba_control:SendAnnouncement(message, type)
-```
-
-### Client-Side Functions
-
-#### UI Control
-```lua
--- Open control panel
-exports.seba_control:OpenPanel()
-
--- Close control panel
-exports.seba_control:ClosePanel()
-
--- Check if panel is open
-local isOpen = exports.seba_control:IsPanelOpen()
-```
-
-## Events
-
-### Server Events
-
-#### seba_control:playerBanned
-```lua
-AddEventHandler('seba_control:playerBanned', function(playerData, adminData, reason)
-    print(playerData.name .. ' was banned by ' .. adminData.name)
-end)
-```
-
-#### seba_control:resourceRestarted
-```lua
-AddEventHandler('seba_control:resourceRestarted', function(resourceName, adminId)
-    print(resourceName .. ' was restarted by admin')
-end)
-```
-
-### Client Events
-
-#### seba_control:panelOpened
-```lua
-AddEventHandler('seba_control:panelOpened', function()
-    -- Panel opened
-end)
-```
-
-#### seba_control:announcementReceived
-```lua
-AddEventHandler('seba_control:announcementReceived', function(message, type)
-    -- Handle announcement
-end)
-```
-
-## UI Features
-
-### Main Dashboard
-- **Server Overview**: Player count, uptime, performance
-- **Quick Actions**: Common administrative tasks
-- **Recent Activities**: Recent bans, kicks, and actions
-- **Resource Status**: Current resource health
-
-### Player Management Panel
-- **Player List**: All connected players with details
-- **Search & Filter**: Find players quickly
-- **Bulk Actions**: Manage multiple players at once
-- **Player Profiles**: Detailed player information
-
-### Resource Manager
-- **Resource List**: All server resources
-- **Status Monitoring**: Resource health and performance
-- **Quick Controls**: Start, stop, restart resources
-- **Dependency Tracking**: Resource dependency visualization
-
-### Server Control
-- **Performance Metrics**: CPU, RAM, network usage
-- **Console Output**: Real-time console monitoring
-- **Scheduled Tasks**: Automated server management
-- **Backup Management**: Server backup controls
-
-## Usage Examples
-
-### Basic Administration
-```lua
--- Check if player is admin before allowing action
-RegisterCommand('admin_spawn', function(source, args)
-    if exports.seba_control:HasPermission(source, 'vehicle_spawn') then
-        local vehicleHash = GetHashKey(args[1])
-        -- Spawn vehicle logic
+        exports.seba_control:invalidateBalanceCache(targetDiscord)
     else
         TriggerClientEvent('chat:addMessage', source, {
-            color = {255, 0, 0},
-            multiline = true,
-            args = {"System", "You don't have permission for this command"}
+            args = {"[ERROR]", message}
         })
     end
-end)
+end, false)
+
+RegisterCommand("serverstatus", function(source)
+    if not IsPlayerAceAllowed(source, "seba_control.admin") then return end
+
+    local success, message = exports.seba_control:updateServerStatus()
+
+    TriggerClientEvent('chat:addMessage', source, {
+        args = {"[STATUS]", success and "Status updated" or "Error: " .. message}
+    })
+end, false)
 ```
 
-### Custom Permission Check
+### 5. Casino / betting system
+
 ```lua
--- Add custom permission level
-RegisterServerEvent('myresource:checkCustomPermission')
-AddEventHandler('myresource:checkCustomPermission', function()
-    local src = source
-    local permLevel = exports.seba_control:GetPermissionLevel(src)
-    
-    if permLevel >= 3 then -- Admin level
-        -- Allow action
-        TriggerClientEvent('myresource:allowAction', src)
-    else
-        -- Deny action
-        TriggerClientEvent('myresource:denyAction', src)
+local function playSlots(source, bet)
+    if bet < 10 or bet > 1000 then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[CASINO]", "Bet must be between 10 and 1000 credits"}
+        })
+        return
     end
-end)
-```
 
-### Automated Monitoring
-```lua
-CreateThread(function()
-    while true do
-        local stats = exports.seba_control:GetServerStats()
-        
-        if stats.playerCount > 50 then
-            exports.seba_control:SendAnnouncement(
-                'Server is getting busy! Please be patient.',
-                'info'
-            )
+    local success, message = exports.seba_control:spendCredits(source, bet, "Casino", "Slots bet")
+
+    if not success then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[CASINO]", "Insufficient credits: " .. message}
+        })
+        return
+    end
+
+    local chance = math.random(1, 100)
+    local winAmount = 0
+
+    if chance <= 5 then
+        winAmount = bet * 10
+    elseif chance <= 20 then
+        winAmount = bet * 3
+    elseif chance <= 40 then
+        winAmount = bet * 1.5
+    end
+
+    if winAmount > 0 then
+        local discordId = exports.seba_control:seba_identifier(source, "discord")
+        if discordId then
+            exports.seba_control:addCredits(discordId, winAmount, "Casino", "Slots winnings")
+            TriggerClientEvent('chat:addMessage', source, {
+                args = {"[CASINO]", "You won " .. winAmount .. " credits!"}
+            })
         end
-        
-        Wait(300000) -- Check every 5 minutes
+    else
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[CASINO]", "You lost " .. bet .. " credits. Better luck next time!"}
+        })
     end
-end)
+end
+
+RegisterCommand("slots", function(source, args)
+    local bet = tonumber(args[1])
+    if not bet then
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[USAGE]", "/slots <amount>"}
+        })
+        return
+    end
+
+    playSlots(source, bet)
+end, false)
 ```
 
-## Security Features
+## Backend endpoint structure
 
-### Access Control
-- **Permission-based system**: Granular access control
-- **Session management**: Secure admin sessions
-- **Action logging**: All administrative actions logged
-- **IP restrictions**: Optional IP-based restrictions
+### Credits API (`/api/fivem`)
+- `POST /spend`
+- `POST /add`
+- `GET /balance/:discordId`
 
-### Anti-Abuse
-- **Rate limiting**: Prevents command spam
-- **Action confirmation**: Requires confirmation for critical actions
-- **Audit trails**: Complete audit trail of all actions
-- **Session timeouts**: Automatic session expiration
+### Servers API (`/api/servers`)
+- `POST /server-status`
+- `POST /refresh-card`
+- `GET /server/:serverId`
+
+### Health API
+- `GET /health`
 
 ## Troubleshooting
 
-### Common Issues
+1. **"Unable to resolve Discord ID"**
+   - Confirm the player has Discord linked.
+   - Double-check `sv_scriptHookAllowed` and the identifier permissions in `server.cfg`.
+2. **"Authentication error"**
+   - Ensure `FIVEM_SECRET` matches the value expected by the backend.
+   - Verify the backend recognises the configured server ID.
+3. **"API connection failed"**
+   - Validate the configured URL and ensure the backend is reachable.
+   - Confirm the backend service is running.
+   - Temporarily enable bypass mode if you need to diagnose locally.
+4. **"Transaction in progress"**
+   - The transaction lock prevents duplicates; wait a few seconds and retry.
 
-#### Panel Won't Open
-- Check permissions in config
-- Verify player has admin rights
-- Check console for errors
-- Ensure resource is started
+### Debug logging
+- Enable bypass mode for more verbose output.
+- Monitor the server console for HTTP request errors.
 
-#### Database Errors
-- Verify database connection
-- Check credentials in config
-- Ensure database exists
-- Import SQL file if missing tables
+## License
 
-#### Permission Issues
-- Check Config.AdminGroups
-- Verify framework integration
-- Check database permissions table
-- Restart resource after config changes
-
-### Performance Issues
-- Monitor server resources
-- Check database performance
-- Limit concurrent panel users
-- Optimize logging settings
-
-## Performance Optimization
-
-1. **Database Indexing**: Ensure proper database indexes
-2. **Cache Management**: Enable caching for frequently accessed data
-3. **Logging Levels**: Adjust logging to reduce overhead
-4. **Resource Limits**: Set appropriate resource limits
-5. **Regular Maintenance**: Clean up old logs and data
-
-## Changelog
-
-### Version 2.1.0
-- Added resource dependency tracking
-- Enhanced UI with dark/light themes
-- Improved performance monitoring
-- Added bulk player actions
-
-### Version 2.0.0
-- Complete UI redesign
-- Added real-time statistics
-- Enhanced permission system
-- Improved security features
-
-### Version 1.5.0
-- Added automated backup system
-- Enhanced logging capabilities
-- Improved database performance
-- Bug fixes and optimizations
-
----
-
-**Status:** ✅ Active Development  
-**Compatibility:** ESX, QBCore, Standalone  
-**License:** MIT
+This project is released under the MIT License. See `LICENSE` for details.
